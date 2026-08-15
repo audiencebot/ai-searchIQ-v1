@@ -1,17 +1,41 @@
-/**
- * Placeholder login page so /login resolves before the auth graft lands.
- * The backend graft owns and will overwrite this file (see react-dev.md
- * "Full-Stack Auth Contract") — do not add OAuth/session logic here.
- */
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+function getOAuthUrl() {
+  const kimiAuthUrl = import.meta.env.VITE_KIMI_AUTH_URL;
+  const appID = import.meta.env.VITE_APP_ID;
+  const redirectUri = `${window.location.origin}/api/oauth/callback`;
+  const state = btoa(redirectUri);
+
+  const url = new URL(`${kimiAuthUrl}/api/oauth/authorize`);
+  url.searchParams.set("client_id", appID);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "profile");
+  url.searchParams.set("state", state);
+
+  return url.toString();
+}
+
 export default function Login() {
   return (
-    <div className="flex min-h-[70dvh] flex-col items-center justify-center px-6 py-24 text-center">
-      <p className="font-label text-ares-primary">Member access</p>
-      <h1 className="font-display mt-4 text-[40px]">Login</h1>
-      <div className="mt-6 h-px w-16 bg-ares-primary" />
-      <p className="font-body mt-6 max-w-md text-ares-secondarytext">
-        Sign in to your tenant workspace. Authentication is being connected.
-      </p>
+    <div className="min-h-screen flex items-center justify-center">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle>Welcome</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={() => {
+              window.location.href = getOAuthUrl();
+            }}
+          >
+            Sign in with Kimi
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
