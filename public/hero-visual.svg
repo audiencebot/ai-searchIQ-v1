@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
+  <defs>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.176  0 0 0 0 0.106  0 0 0 0 0.067  0 0 0 0.03 0"/>
+    </filter>
+  </defs>
+
+  <!-- cream field -->
+  <rect width="1200" height="1200" fill="#EAE0D6"/>
+
+  <!-- subtle hairline grid -->
+  <g stroke="#2D1B11" stroke-opacity="0.05" stroke-width="1">
+    <line x1="150" y1="0" x2="150" y2="1200"/><line x1="300" y1="0" x2="300" y2="1200"/>
+    <line x1="450" y1="0" x2="450" y2="1200"/><line x1="600" y1="0" x2="600" y2="1200"/>
+    <line x1="750" y1="0" x2="750" y2="1200"/><line x1="900" y1="0" x2="900" y2="1200"/>
+    <line x1="1050" y1="0" x2="1050" y2="1200"/>
+    <line x1="0" y1="150" x2="1200" y2="150"/><line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="450" x2="1200" y2="450"/><line x1="0" y1="600" x2="1200" y2="600"/>
+    <line x1="0" y1="750" x2="1200" y2="750"/><line x1="0" y1="900" x2="1200" y2="900"/>
+    <line x1="0" y1="1050" x2="1200" y2="1050"/>
+  </g>
+
+  <!-- concentric radar arcs emanating from lower-left -->
+  <g fill="none" stroke="#2D1B11" stroke-width="1" stroke-opacity="0.45">
+    <path d="M 270 1080 A 150 150 0 0 0 120 930" stroke-dasharray="6 8"/>
+    <path d="M 390 1080 A 270 270 0 0 0 120 810"/>
+    <path d="M 510 1080 A 390 390 0 0 0 120 690" stroke-dasharray="2 6"/>
+    <path d="M 630 1080 A 510 510 0 0 0 120 570"/>
+    <path d="M 750 1080 A 630 630 0 0 0 120 450" stroke-dasharray="6 8"/>
+    <path d="M 870 1080 A 750 750 0 0 0 120 330"/>
+    <path d="M 990 1080 A 870 870 0 0 0 120 210" stroke-dasharray="2 6"/>
+    <path d="M 1110 1080 A 990 990 0 0 0 120 90" stroke-opacity="0.3"/>
+  </g>
+
+  <!-- sweeping needle -->
+  <line x1="120" y1="1080" x2="820" y2="380" stroke="#CB4D22" stroke-width="1.5" stroke-opacity="0.9"/>
+
+  <!-- dotted connector lines between engine dots -->
+  <g fill="none" stroke="#CB4D22" stroke-width="1" stroke-opacity="0.55" stroke-dasharray="1 6" stroke-linecap="round">
+    <path d="M 255 945 Q 340 880 372 872"/>
+    <path d="M 372 872 Q 500 800 578 752"/>
+    <path d="M 578 752 Q 680 660 744 612"/>
+    <path d="M 744 612 Q 830 520 903 452"/>
+    <path d="M 903 452 Q 970 380 1020 342"/>
+  </g>
+
+  <!-- six engine dots on the arcs -->
+  <g>
+    <circle cx="255" cy="945" r="14" fill="none" stroke="#CB4D22" stroke-opacity="0.35" stroke-width="1"/>
+    <circle cx="255" cy="945" r="6" fill="#CB4D22"/>
+    <circle cx="372" cy="872" r="14" fill="none" stroke="#CB4D22" stroke-opacity="0.35" stroke-width="1"/>
+    <circle cx="372" cy="872" r="6" fill="#CB4D22"/>
+    <circle cx="578" cy="752" r="14" fill="none" stroke="#CB4D22" stroke-opacity="0.35" stroke-width="1"/>
+    <circle cx="578" cy="752" r="6" fill="#CB4D22"/>
+    <circle cx="744" cy="612" r="14" fill="none" stroke="#CB4D22" stroke-opacity="0.35" stroke-width="1"/>
+    <circle cx="744" cy="612" r="6" fill="#CB4D22"/>
+    <circle cx="903" cy="452" r="14" fill="none" stroke="#CB4D22" stroke-opacity="0.35" stroke-width="1"/>
+    <circle cx="903" cy="452" r="6" fill="#CB4D22"/>
+    <circle cx="1020" cy="342" r="14" fill="none" stroke="#CB4D22" stroke-opacity="0.35" stroke-width="1"/>
+    <circle cx="1020" cy="342" r="6" fill="#CB4D22"/>
+  </g>
+
+  <!-- origin point -->
+  <circle cx="120" cy="1080" r="5" fill="#2D1B11"/>
+  <circle cx="120" cy="1080" r="12" fill="none" stroke="#2D1B11" stroke-opacity="0.4" stroke-width="1"/>
+
+  <!-- editorial labels -->
+  <text x="60" y="80" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="300" letter-spacing="4" fill="#2D1B11" fill-opacity="0.75">SIX ENGINES</text>
+  <text x="60" y="110" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="300" letter-spacing="4" fill="#2D1B11" fill-opacity="0.75">ONE PICTURE</text>
+  <line x1="60" y1="134" x2="220" y2="134" stroke="#CB4D22" stroke-width="2"/>
+
+  <text x="1064" y="1120" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13" font-weight="300" letter-spacing="3" fill="#2D1B11" fill-opacity="0.55" text-anchor="end">DAILY SCANS · 06:00</text>
+
+  <!-- 3% paper grain -->
+  <rect width="1200" height="1200" filter="url(#grain)"/>
+</svg>

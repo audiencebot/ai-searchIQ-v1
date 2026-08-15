@@ -4,64 +4,34 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --background: 30 21% 91%;
+    --foreground: 17 44% 12%;
+    --card: 30 33% 98%;
+    --card-foreground: 17 44% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 17 44% 12%;
+    --primary: 17 72% 46%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 29 29% 88%;
+    --secondary-foreground: 16 26% 19%;
+    --muted: 29 29% 88%;
+    --muted-foreground: 25 11% 49%;
+    --accent: 29 29% 88%;
+    --accent-foreground: 17 44% 12%;
+    --destructive: 14 75% 38%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.625rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 29 29% 88%;
+    --input: 29 29% 88%;
+    --ring: 17 72% 46%;
+    --radius: 2px;
+    --sidebar-background: 17 44% 12%;
+    --sidebar-foreground: 29 29% 88%;
+    --sidebar-primary: 17 72% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 17 30% 18%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 17 20% 22%;
+    --sidebar-ring: 17 72% 46%;
   }
 }
 
@@ -69,7 +39,201 @@
   * {
     @apply border-border;
   }
+  html {
+    @apply scroll-smooth;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-ares-pageBg text-ares-text font-sans antialiased;
+    font-weight: 300;
+    font-size: 12px;
+    line-height: 19.5px;
+  }
+  ::selection {
+    background: rgba(203, 77, 34, 0.18);
+  }
+}
+
+@layer components {
+  /* ---------- Typography (design.md §3) ---------- */
+  .font-display {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 200;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    line-height: 1.04;
+    @apply text-ares-tertiary;
+  }
+  .font-display-num {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 200;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    @apply text-ares-primary;
+  }
+  .font-label {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 11px;
+    line-height: 16px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .font-body {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    font-size: 12px;
+    line-height: 19.5px;
+  }
+
+  /* ---------- Rules & texture ---------- */
+  .section-rule {
+    @apply w-full border-0;
+    height: 1px;
+    background: #eae0d6;
+  }
+  .section-rule-dark {
+    @apply w-full border-0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+  .noise-overlay {
+    position: relative;
+  }
+  .noise-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("/texture-noise.svg");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---------- Buttons (design.md §5.1) ---------- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-ares border border-ares-primary bg-ares-primary text-white transition-colors duration-200 ease-in-out;
+    padding: 10px 16px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover {
+    @apply bg-ares-primaryDark border-ares-primaryDark;
+  }
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(203, 77, 34, 0.35);
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-ares border border-ares-border bg-transparent text-ares-secondarytext transition-colors duration-200 ease-in-out;
+    padding: 10px 16px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .btn-secondary:hover {
+    @apply border-ares-primary text-ares-primary;
+  }
+  .btn-secondary-dark {
+    @apply inline-flex items-center justify-center gap-2 rounded-ares border bg-transparent transition-colors duration-200 ease-in-out;
+    color: #eae0d6;
+    border-color: rgba(234, 224, 214, 0.4);
+    padding: 10px 16px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .btn-secondary-dark:hover {
+    @apply border-ares-primary text-ares-primary;
+  }
+
+  /* ---------- Cards (design.md §5.2) ---------- */
+  .kpi-tile {
+    @apply rounded-ares border border-ares-border bg-ares-card p-4 transition-all duration-200 ease-in-out;
+  }
+  .kpi-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 24px rgba(45, 27, 17, 0.08);
+  }
+  .action-card {
+    @apply rounded-ares border border-ares-border bg-ares-card p-4 transition-all duration-200 ease-in-out;
+  }
+  .action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 24px rgba(45, 27, 17, 0.08);
+  }
+  .badge-pill {
+    @apply inline-flex items-center gap-1.5 rounded-ares border border-ares-border bg-ares-card;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Data display (design.md §5.3) ---------- */
+  .data-table {
+    @apply w-full border-collapse;
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 300;
+  }
+  .data-table th {
+    @apply text-ares-muted text-left;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border-bottom: 1px solid #eae0d6;
+  }
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eae0d6;
+  }
+  .bar-track {
+    @apply w-full rounded-ares;
+    height: 6px;
+    background: #eae0d6;
+    overflow: hidden;
+  }
+  .bar-fill {
+    @apply h-full rounded-ares bg-ares-primary;
+    transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@layer utilities {
+  .text-on-dark {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .text-on-dark-muted {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .text-on-dark-faint {
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+@keyframes ares-float {
+  0%,
+  100% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-ares-float {
+    animation: ares-float 6s ease-in-out infinite;
   }
 }

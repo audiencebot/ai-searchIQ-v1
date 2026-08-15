@@ -4,7 +4,25 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
+        ares: {
+          primary: "#CB4D22",
+          primaryDark: "#B33F19",
+          tertiary: "#2D1B11",
+          text: "#2D1B11",
+          secondarytext: "#3E2923",
+          muted: "#8A7A6E",
+          link: "#7A6458",
+          secondary: "#EAE0D6",
+          border: "#EAE0D6",
+          border2: "#EBE3DC",
+          card: "#FDFBF9",
+          surface: "#FFFFFF",
+          pageBg: "#EFE9E2",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -50,6 +68,7 @@ module.exports = {
         },
       },
       borderRadius: {
+        ares: "2px",
         xl: "calc(var(--radius) + 4px)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -57,6 +76,7 @@ module.exports = {
         xs: "calc(var(--radius) - 6px)",
       },
       boxShadow: {
+        paper: "0 2px 24px rgba(45,27,17,0.08)",
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
       },
       keyframes: {
