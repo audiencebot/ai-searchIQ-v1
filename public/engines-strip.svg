@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 160" width="1440" height="160">
+<rect width="1440" height="160" fill="none"/>
+<g>
+<rect x="0" y="32" width="220" height="96" rx="2" fill="#EAE0D6" stroke="#2D1B11" stroke-opacity="0.15" stroke-width="1"/>
+<polygon points="127.0,64.0 118.5,78.7 101.5,78.7 93.0,64.0 101.5,49.3 118.5,49.3" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<circle cx="110.0" cy="64" r="3.5" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<text x="110.0" y="114" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="300" letter-spacing="1.6" fill="#2D1B11" fill-opacity="0.75" text-anchor="middle">CHATGPT</text>
+</g>
+<g>
+<rect x="244" y="32" width="220" height="96" rx="2" fill="#EAE0D6" stroke="#2D1B11" stroke-opacity="0.15" stroke-width="1"/>
+<path d="M 354.0 45 C 356.5 58 360.0 61.5 373.0 64 C 360.0 66.5 356.5 70 354.0 83 C 351.5 70 348.0 66.5 335.0 64 C 348.0 61.5 351.5 58 354.0 45 Z" fill="none" stroke="#2D1B11" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="354.0" y="114" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="300" letter-spacing="1.6" fill="#2D1B11" fill-opacity="0.75" text-anchor="middle">GEMINI</text>
+</g>
+<g>
+<rect x="488" y="32" width="220" height="96" rx="2" fill="#EAE0D6" stroke="#2D1B11" stroke-opacity="0.15" stroke-width="1"/>
+<circle cx="598.0" cy="64" r="16" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<path d="M 582.0 68 A 16.5 16.5 0 0 1 614.0 68" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<circle cx="598.0" cy="59" r="2.5" fill="#2D1B11"/>
+<text x="598.0" y="114" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="300" letter-spacing="1.6" fill="#2D1B11" fill-opacity="0.75" text-anchor="middle">CLAUDE</text>
+</g>
+<g>
+<rect x="732" y="32" width="220" height="96" rx="2" fill="#EAE0D6" stroke="#2D1B11" stroke-opacity="0.15" stroke-width="1"/>
+<circle cx="842.0" cy="64" r="17" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<polygon points="842.0,53 846.5,67 842.0,72 837.5,67" fill="none" stroke="#2D1B11" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="842.0" y="114" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="300" letter-spacing="1.6" fill="#2D1B11" fill-opacity="0.75" text-anchor="middle">PERPLEXITY</text>
+</g>
+<g>
+<rect x="976" y="32" width="220" height="96" rx="2" fill="#EAE0D6" stroke="#2D1B11" stroke-opacity="0.15" stroke-width="1"/>
+<circle cx="1086.0" cy="64" r="17" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<line x1="1086.0" y1="47.0" x2="1092.9" y2="60.0" stroke="#2D1B11" stroke-width="1.5"/>
+<line x1="1071.3" y1="72.5" x2="1079.1" y2="60.0" stroke="#2D1B11" stroke-width="1.5"/>
+<line x1="1100.7" y1="72.5" x2="1086.0" y2="72.0" stroke="#2D1B11" stroke-width="1.5"/>
+<circle cx="1086.0" cy="64" r="6.5" fill="none" stroke="#2D1B11" stroke-width="1.5"/>
+<text x="1086.0" y="114" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="300" letter-spacing="1.6" fill="#2D1B11" fill-opacity="0.75" text-anchor="middle">GOOGLE AI OVERVIEWS</text>
+</g>
+<g>
+<rect x="1220" y="32" width="220" height="96" rx="2" fill="#EAE0D6" stroke="#2D1B11" stroke-opacity="0.15" stroke-width="1"/>
+<path d="M 1347.0 64 A 17 17 0 1 1 1330.0 47" fill="none" stroke="#2D1B11" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M 1340.0 64 A 10 10 0 1 1 1330.0 54" fill="none" stroke="#2D1B11" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="1330.0" y1="64" x2="1342.0" y2="52" stroke="#2D1B11" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="1330.0" cy="64" r="1.8" fill="#2D1B11"/>
+<text x="1330.0" y="114" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="10.5" font-weight="300" letter-spacing="1.6" fill="#2D1B11" fill-opacity="0.75" text-anchor="middle">AI SEARCH</text>
+</g>
+</svg>
