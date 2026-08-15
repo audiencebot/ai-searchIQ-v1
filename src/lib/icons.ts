@@ -27,6 +27,12 @@ import hamburgerMenu from '@iconify-icons/solar/hamburger-menu-linear';
 import altArrowLeft from '@iconify-icons/solar/alt-arrow-left-linear';
 import altArrowDown from '@iconify-icons/solar/alt-arrow-down-linear';
 import closeCircle from '@iconify-icons/solar/close-circle-linear';
+import handMoney from '@iconify-icons/solar/hand-money-linear';
+import userPlusRounded from '@iconify-icons/solar/user-plus-rounded-linear';
+import trashBinMinimalistic from '@iconify-icons/solar/trash-bin-minimalistic-linear';
+import addCircle from '@iconify-icons/solar/add-circle-linear';
+import pen2 from '@iconify-icons/solar/pen-2-linear';
+import letter from '@iconify-icons/solar/letter-linear';
 
 export const icons = {
   radar2,
@@ -56,4 +62,10 @@ export const icons = {
   altArrowLeft,
   altArrowDown,
   closeCircle,
+  handMoney,
+  userPlusRounded,
+  trashBinMinimalistic,
+  addCircle,
+  pen2,
+  letter,
 } as const;
