@@ -27,6 +27,15 @@ import hamburgerMenu from '@iconify-icons/solar/hamburger-menu-linear';
 import altArrowLeft from '@iconify-icons/solar/alt-arrow-left-linear';
 import altArrowDown from '@iconify-icons/solar/alt-arrow-down-linear';
 import closeCircle from '@iconify-icons/solar/close-circle-linear';
+import likeLinear from '@iconify-icons/solar/like-linear';
+import dislikeLinear from '@iconify-icons/solar/dislike-linear';
+import plain2 from '@iconify-icons/solar/plain-2-linear';
+import copyLinear from '@iconify-icons/solar/copy-linear';
+import shareLinear from '@iconify-icons/solar/share-linear';
+import handMoney from '@iconify-icons/solar/hand-money-linear';
+import addCircle from '@iconify-icons/solar/add-circle-linear';
+import arrowUpLinear from '@iconify-icons/solar/arrow-up-linear';
+import arrowDownLinear from '@iconify-icons/solar/arrow-down-linear';
 
 export const icons = {
   radar2,
@@ -56,4 +65,13 @@ export const icons = {
   altArrowLeft,
   altArrowDown,
   closeCircle,
+  likeLinear,
+  dislikeLinear,
+  plain2,
+  copyLinear,
+  shareLinear,
+  handMoney,
+  addCircle,
+  arrowUpLinear,
+  arrowDownLinear,
 } as const;
