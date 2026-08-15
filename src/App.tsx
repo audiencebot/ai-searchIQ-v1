@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router';
 import Layout from '@/components/Layout';
+import AuthLayout from '@/components/AuthLayout';
 import PortalLayout from '@/components/portal/PortalLayout';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
@@ -17,8 +18,16 @@ export default function App() {
         <Route path="/login" element={<Login />} />
       </Route>
 
-      {/* Member portal */}
-      <Route path="/app" element={<PortalLayout />}>
+      {/* Member portal — gated by the graft's AuthLayout (sign-in wall +
+          session handling); PortalLayout keeps its own nav inside it. */}
+      <Route
+        path="/app"
+        element={
+          <AuthLayout>
+            <PortalLayout />
+          </AuthLayout>
+        }
+      >
         <Route index element={<StubPage title="Dashboard" />} />
         <Route path="monitoring" element={<StubPage title="Prompt Monitoring" />} />
         <Route path="competitors" element={<StubPage title="Competitors" />} />

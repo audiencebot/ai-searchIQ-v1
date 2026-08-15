@@ -4,6 +4,8 @@ import { Icon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { icons } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { LOGIN_PATH } from '@/const';
 
 const NAV_LINKS = [
   { to: '/platform', label: 'Platform' },
@@ -16,6 +18,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -88,20 +91,49 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.28 }}
           >
-            {/* AUTH-SLOT: rewired to useAuth() in Phase 5 */}
-            <Link
-              to="/login"
-              className="btn-secondary !px-4 !py-2 text-[11px]"
-            >
-              Sign in
-            </Link>
+            {/* Auth slot — driven by useAuth() */}
+            {isLoading ? (
+              // Neutral placeholder while the session resolves
+              <span className="inline-block h-8 w-20 animate-pulse rounded-ares border border-ares-border bg-ares-secondary/60" />
+            ) : isAuthenticated && user ? (
+              <span className="flex items-center gap-3">
+                <Link
+                  to="/app"
+                  className="text-[11px] font-light uppercase tracking-[0.04em] text-ares-secondarytext transition-colors duration-200 hover:text-ares-primary"
+                >
+                  Dashboard
+                </Link>
+                <span
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-ares-primary text-[11px] font-normal text-white"
+                  title={user.email ?? undefined}
+                >
+                  {(user.name ?? user.email ?? '?').charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-[120px] truncate text-[12px] font-light text-ares-tertiary">
+                  {user.name ?? user.email}
+                </span>
+                <button
+                  onClick={logout}
+                  className="btn-secondary !px-4 !py-2 text-[11px]"
+                >
+                  Sign out
+                </button>
+              </span>
+            ) : (
+              <Link
+                to={LOGIN_PATH}
+                className="btn-secondary !px-4 !py-2 text-[11px]"
+              >
+                Sign in
+              </Link>
+            )}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.34 }}
           >
-            <Link to="/login?intent=report" className="btn-primary !px-4 !py-2 text-[11px]">
+            <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary !px-4 !py-2 text-[11px]">
               Request your report
             </Link>
           </motion.div>
@@ -158,11 +190,24 @@ export default function Navbar() {
                 transition={{ duration: 0.3, delay: NAV_LINKS.length * 0.06 }}
                 className="mt-6 flex flex-col gap-3"
               >
-                {/* AUTH-SLOT: rewired to useAuth() in Phase 5 */}
-                <Link to="/login" className="btn-secondary-dark justify-center">
-                  Sign in
-                </Link>
-                <Link to="/login?intent=report" className="btn-primary justify-center">
+                {/* Auth slot — driven by useAuth() */}
+                {isLoading ? (
+                  <span className="inline-block h-10 animate-pulse rounded-ares border border-white/15 bg-white/5" />
+                ) : isAuthenticated && user ? (
+                  <>
+                    <Link to="/app" className="btn-secondary-dark justify-center">
+                      Dashboard
+                    </Link>
+                    <button onClick={logout} className="btn-secondary-dark justify-center">
+                      Sign out ({user.name ?? user.email})
+                    </button>
+                  </>
+                ) : (
+                  <Link to={LOGIN_PATH} className="btn-secondary-dark justify-center">
+                    Sign in
+                  </Link>
+                )}
+                <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary justify-center">
                   Request your report
                 </Link>
               </motion.div>

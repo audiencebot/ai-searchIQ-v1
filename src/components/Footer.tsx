@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { Icon } from '@iconify/react';
 import { icons } from '@/lib/icons';
+import { LOGIN_PATH } from '@/const';
 
 const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
@@ -9,7 +10,7 @@ const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
       { label: 'Platform', to: '/platform' },
       { label: 'Pricing', to: '/pricing' },
       { label: 'Sample Report', to: '/sample-report' },
-      { label: 'Sign in', to: '/login' },
+      { label: 'Sign in', to: LOGIN_PATH },
     ],
   },
   {

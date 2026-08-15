@@ -1,14 +1,29 @@
+import { actionPlanRouter } from "./action-plan-router";
+import { alertsRouter } from "./alerts-router";
+import { askRouter } from "./ask-router";
 import { authRouter } from "./auth-router";
+import { bootstrapRouter } from "./bootstrap-router";
+import { citationsRouter } from "./citations-router";
+import { competitorsRouter } from "./competitors-router";
+import { dashboardRouter } from "./dashboard-router";
+import { monitoringRouter } from "./monitoring-router";
+import { reportRouter } from "./report-router";
+import { settingsRouter } from "./settings-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
   auth: authRouter,
-
-  // TODO: add feature routers here, e.g.
-  // todo: createRouter({
-  //   list: publicQuery.query(() => findTodos()),
-  // }),
+  bootstrap: bootstrapRouter,
+  dashboard: dashboardRouter,
+  monitoring: monitoringRouter,
+  competitors: competitorsRouter,
+  citations: citationsRouter,
+  alerts: alertsRouter,
+  actionPlan: actionPlanRouter,
+  ask: askRouter,
+  report: reportRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

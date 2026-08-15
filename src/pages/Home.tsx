@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, memo } from 'react';
 import { Link } from 'react-router';
+import { LOGIN_PATH } from '@/const';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
@@ -511,7 +512,7 @@ export default function Home() {
               how to improve it.
             </p>
             <div data-hero-fade className="mt-8 flex flex-wrap items-center gap-3">
-              <Link to="/login?intent=report" className="btn-primary">
+              <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary">
                 Request your AI Visibility Report
               </Link>
               <Link to="/sample-report" className="btn-secondary">
@@ -881,10 +882,10 @@ export default function Home() {
             Request your initial AI Visibility Report. Baseline in days, plan included.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link to="/login?intent=report" className="btn-primary">
+            <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary">
               Request your AI Visibility Report
             </Link>
-            <Link to="/login" className="btn-secondary-dark">
+            <Link to={LOGIN_PATH} className="btn-secondary-dark">
               Sign in
             </Link>
           </div>
