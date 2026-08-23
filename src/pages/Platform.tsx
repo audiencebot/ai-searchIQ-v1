@@ -281,6 +281,57 @@ function MockCopilot({ active }: { active: boolean }) {
   );
 }
 
+const BOT_SIGNALS = [
+  { label: 'Training crawl', agent: 'GPTBot · ClaudeBot · PerplexityBot', value: 84, count: '1,204 hits' },
+  { label: 'Citation fetch', agent: 'ChatGPT-User · Claude-User · Perplexity-User', value: 52, count: '312 fetches' },
+  { label: 'Referral visit', agent: 'chatgpt.com · perplexity.ai · gemini.google.com', value: 38, count: '221 visits' },
+];
+
+function MockChannelAnalytics({ active }: { active: boolean }) {
+  return (
+    <div className="w-full space-y-4">
+      {BOT_SIGNALS.map((row, i) => (
+        <div
+          key={row.label}
+          className="transition-all duration-500"
+          style={{
+            opacity: active ? 1 : 0,
+            transform: active ? 'translateY(0)' : 'translateY(12px)',
+            transitionDelay: `${i * 100}ms`,
+          }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[10px] font-normal uppercase tracking-[0.08em] text-ares-tertiary">
+              {row.label}
+            </span>
+            <span className="text-[10px] font-normal text-ares-primary">{row.count}</span>
+          </div>
+          <p className="mt-0.5 text-[9px] font-light text-ares-muted">{row.agent}</p>
+          <div className="bar-track mt-1.5">
+            <div
+              className="bar-fill"
+              style={{ width: active ? `${row.value}%` : '0%', transitionDelay: `${i * 80}ms` }}
+            />
+          </div>
+        </div>
+      ))}
+      <div
+        className="flex items-center justify-between rounded-ares border border-ares-border2 bg-ares-secondary px-3 py-2.5 transition-all duration-500"
+        style={{
+          opacity: active ? 1 : 0,
+          transform: active ? 'translateY(0)' : 'translateY(12px)',
+          transitionDelay: '350ms',
+        }}
+      >
+        <span className="text-[10px] font-light text-ares-secondarytext">
+          AI-referred revenue this month
+        </span>
+        <span className="font-display-num text-[16px]">$18,400</span>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------- module rows -------------------------------- */
 
 const MODULES = [
@@ -355,6 +406,19 @@ const MODULES = [
       'Hard tenant scoping, honest "not enough data"',
     ],
     Mock: MockCopilot,
+  },
+  {
+    id: 'channel-analytics',
+    eyebrow: 'Module 07 · AI Channel Analytics',
+    title: 'Measured, not estimated — proof from your own server.',
+    body: 'Prompt monitoring shows how AI talks about you; server-side analytics show what AI actually does on your site. Every training crawl, every live citation fetch while a real customer gets an answer, every visit referred from an AI response — captured first-party, no sampling.',
+    bullets: [
+      'Server-side capture via log drains (Vercel / Netlify / Cloudflare) or log upload',
+      'Three-signal bot classification: training / citation-fetch / referral',
+      'Ghost-page and JS-rendering-gap detection',
+      'AI-referrer revenue attribution',
+    ],
+    Mock: MockChannelAnalytics,
   },
 ];
 
@@ -445,6 +509,7 @@ const SCORE_COMPONENTS = [
 /* ------------------------------ S5 integrations ----------------------------- */
 
 const INTEGRATIONS = [
+  { name: 'Log drains', role: 'Server-side AI traffic capture via Vercel, Netlify, or Cloudflare — or upload logs directly.' },
   { name: 'Google Business Profile', role: 'Ground truth for listings, service areas, reviews.' },
   { name: 'Google Search Console', role: 'Real query demand grounds your prompt set.' },
   { name: 'Google Analytics 4', role: 'AI-referral attribution: visibility → visits → conversions.' },
@@ -624,7 +689,7 @@ export default function Platform() {
       {/* S5 — Integrations strip */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeader eyebrow="Connected stack" title="Plugs into the tools you already run." titleSize="clamp(24px, 3vw, 32px)" />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5" data-reveal-group>
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-reveal-group>
           {INTEGRATIONS.map((intg) => (
             <div key={intg.name} className="action-card flex flex-col !p-5 hover:border-ares-primary">
               <Icon icon={icons.plugCircle} width={22} height={22} className="text-ares-primary" />

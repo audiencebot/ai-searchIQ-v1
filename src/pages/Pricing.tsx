@@ -266,7 +266,13 @@ export default function Pricing() {
           </div>
         </div>
         <p
-          className="mx-auto mt-8 max-w-2xl text-center text-[10px] font-light leading-[16px] text-ares-muted"
+          className="mt-10 text-center text-[13px] font-normal leading-[22px] text-ares-secondarytext"
+          data-reveal
+        >
+          Less than an agency retainer. More proof than any prompt-sampling tool.
+        </p>
+        <p
+          className="mx-auto mt-4 max-w-2xl text-center text-[10px] font-light leading-[16px] text-ares-muted"
           data-reveal
         >
           The platform is a continuation of the report — your $399 baseline seeds the tenant, so day

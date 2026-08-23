@@ -317,6 +317,10 @@ function MockAct({ active }: { active: boolean }) {
 
 const FAQS = [
   {
+    q: 'How is this different from Profound or Peec?',
+    a: 'Prompt-sampling tools estimate visibility from a hand-picked basket of prompts. AI Search IQ pairs that monitoring with first-party, server-side measurement of every AI crawl, citation fetch, and referred visit on your actual site — proof, not estimates.',
+  },
+  {
     q: 'What exactly do you monitor?',
     a: 'Your 12 priority buyer prompts, executed daily across six AI engines — ChatGPT, Gemini, Claude, Perplexity, Google AI Overviews, and AI Search. We capture the full response a real user would see: whether you are mentioned, how you are described, which sources are cited, and how competitors rank beside you.',
   },
@@ -493,7 +497,7 @@ export default function Home() {
           <div className="lg:col-span-7">
             <p data-hero-fade className="font-label flex items-center gap-2 text-ares-primary">
               <Icon icon={icons.radar2} width={16} height={16} />
-              AI Search Visibility Platform
+              AI VISIBILITY — MEASURED, NOT ESTIMATED
             </p>
             <h1
               ref={h1Ref}
@@ -507,9 +511,9 @@ export default function Home() {
               data-hero-fade
               className="mt-6 max-w-[480px] text-[13px] font-light leading-[22px] text-ares-secondarytext"
             >
-              Buyers now ask ChatGPT, Gemini, Claude, and Perplexity who to trust. AI Search IQ
-              measures how every major AI engine describes your business — then shows you exactly
-              how to improve it.
+              Prompt monitoring shows how AI talks about your brand. Server-side analytics show
+              what AI actually does on your site — every training crawl, every live citation
+              fetch, every referred visit. AI Search IQ is the only platform that does both.
             </p>
             <div data-hero-fade className="mt-8 flex flex-wrap items-center gap-3">
               <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary">
@@ -645,8 +649,54 @@ export default function Home() {
 
       {/* S6 — Platform features grid */}
       <section className="mx-auto max-w-6xl px-6 py-24">
-        <SectionHeader eyebrow="The platform" title="Measure. Understand. Act. Re-measure." />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-reveal-group>
+        <SectionHeader eyebrow="The platform" title="Perception in the answer. Proof on your server." />
+        <p
+          className="mt-6 max-w-2xl text-[13px] font-light leading-[22px] text-ares-secondarytext"
+          data-reveal
+        >
+          Other platforms sample prompts and estimate. AI Search IQ pairs that perception
+          monitoring with first-party, server-side measurement of what AI actually does on your
+          site — three signals no prompt-sampling tool can see.
+        </p>
+        <p className="font-label mt-12 text-ares-primary" data-reveal>
+          Perception + Proof
+        </p>
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3" data-reveal-group>
+          {[
+            {
+              icon: icons.radar2,
+              title: 'Training crawls',
+              body: 'GPTBot, ClaudeBot, PerplexityBot reading your pages for the next model.',
+            },
+            {
+              icon: icons.documentText,
+              title: 'Conversation citations',
+              body: 'ChatGPT-User, Claude-User, Perplexity-User fetching your page while answering a real customer.',
+            },
+            {
+              icon: icons.graphUp,
+              title: 'Referral visits',
+              body: 'People clicking through from AI answers — a channel GA4 cannot see.',
+            },
+          ].map((card) => (
+            <div key={card.title} className="action-card group !p-6">
+              <Icon
+                icon={card.icon}
+                width={22}
+                height={22}
+                className="text-ares-secondarytext transition-colors duration-200 group-hover:text-ares-primary"
+              />
+              <h3 className="mt-4 text-[15px] font-normal text-ares-tertiary">{card.title}</h3>
+              <p className="mt-2 text-[12px] font-light leading-[19.5px] text-ares-secondarytext">
+                {card.body}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="font-label mt-12 text-ares-muted" data-reveal>
+          The modules
+        </p>
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-reveal-group>
           {[
             {
               icon: icons.chart2,
