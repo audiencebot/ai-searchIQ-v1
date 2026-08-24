@@ -5,6 +5,8 @@ import type { IconifyIcon } from '@iconify/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { icons } from '@/lib/icons';
 import { cn } from '@/lib/utils';
+import { trpc } from '@/providers/trpc';
+import { PLAN_LABELS, type PlanTier } from '@contracts/constants';
 import CopilotDrawer from '@/components/portal/CopilotDrawer';
 
 type NavItem = { to: string; label: string; icon: IconifyIcon; badge?: number; end?: boolean };
@@ -161,6 +163,11 @@ export default function PortalLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const pageTitle = PAGE_TITLES[location.pathname] ?? 'Dashboard';
+  const bootstrap = trpc.bootstrap.status.useQuery();
+  const tenant = bootstrap.data?.tenant;
+  const tenantChip = tenant
+    ? `${tenant.name} · ${tenant.industry} · ${PLAN_LABELS[tenant.plan as PlanTier]}`
+    : 'Northwind Advisory · Professional Services';
 
   return (
     <div className="flex min-h-[100dvh] bg-ares-pageBg">
@@ -229,9 +236,7 @@ export default function PortalLayout() {
               />
             </button>
             <h1 className="font-display text-[18px]">{pageTitle}</h1>
-            <span className="badge-pill hidden text-ares-muted md:inline-flex">
-              Northwind Advisory · Professional Services
-            </span>
+            <span className="badge-pill hidden text-ares-muted md:inline-flex">{tenantChip}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="badge-pill hidden text-ares-muted sm:inline-flex">

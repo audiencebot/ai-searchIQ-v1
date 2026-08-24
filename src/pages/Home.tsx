@@ -862,6 +862,10 @@ export default function Home() {
             </p>
           </div>
         </div>
+        <p className="mt-6 text-center text-[11px] font-light text-ares-muted" data-reveal>
+          Agencies &amp; resellers: Enterprise white-label puts your logo and name on the portal and
+          reports — <a href="mailto:hello@ai-search-iq.io" className="text-ares-primaryDark underline-offset-2 hover:underline">talk to us</a>.
+        </p>
         <div className="mt-10 text-center" data-reveal>
           <p className="text-[13px] font-light text-ares-secondarytext">
             Start with the report. Continue only if the data earns it.

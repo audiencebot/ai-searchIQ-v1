@@ -188,6 +188,7 @@ export const settingsRouter = createRouter({
     }
     return {
       plan: tenant.plan,
+      whiteLabel: tenant.whiteLabel,
       priceMonthly: 1000,
       priceNote: "per tenant · unlimited seats",
       initialReport: {

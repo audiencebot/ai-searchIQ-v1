@@ -30,6 +30,10 @@ export const bootstrapRouter = createRouter({
    * Idempotent provisioning: returns the existing membership, or creates one
    * on the seeded demo tenant (see comment above). Safe to call on every
    * portal mount.
+   *
+   * Plan tiers: this mutation never inserts tenants — the tenants.plan schema
+   * default is 'report' ($399 baseline), so any newly provisioned tenant row
+   * starts on the Initial Report tier until upgraded to growth/enterprise.
    */
   ensure: authedQuery.mutation(async ({ ctx }) => {
     const db = getDb();

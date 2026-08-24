@@ -516,7 +516,7 @@ async function seed() {
         name: "Northwind Advisory",
         industry: "Professional Services",
         websiteUrl: "northwindadvisory.com",
-        plan: "platform",
+        plan: "growth",
         profile: {
           legalName: "Northwind Advisory",
           founded: 2009,

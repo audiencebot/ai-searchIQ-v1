@@ -47,6 +47,14 @@ const PLATFORM_FEATURES = [
   'Unlimited seats — invite your whole team',
 ];
 
+const ENTERPRISE_FEATURES = [
+  'White-label: your logo + name on the portal and reports',
+  'Unlimited client workspaces under your own brand',
+  'Resell AI visibility monitoring to your clients',
+  'Priority support + dedicated onboarding',
+  'Custom pricing scoped to your portfolio',
+];
+
 const MINI_STATS = [
   { value: 6, suffix: '', label: 'AI engines monitored' },
   { value: 12, suffix: '', label: 'Priority prompts' },
@@ -101,7 +109,7 @@ const FAQS = [
   },
   {
     q: 'Can agencies run multiple clients?',
-    a: 'Yes — one tenant per client, consolidated in one login. White-label reporting on the roadmap.',
+    a: 'Yes — one tenant per client, consolidated in one login. Enterprise adds white-label branding: your logo and name on the portal and every report.',
   },
   {
     q: 'Can I cancel?',
@@ -219,8 +227,8 @@ export default function Pricing() {
       </section>
 
       {/* S2 — Pricing cards */}
-      <section className="mx-auto max-w-5xl px-6 pb-24">
-        <div ref={cardsRef} className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <div ref={cardsRef} className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
           {/* Card 1 — Initial report */}
           <div data-price-card className="action-card flex flex-col !p-10">
             <p className="font-label text-ares-muted">Step 01 · Baseline</p>
@@ -250,7 +258,7 @@ export default function Pricing() {
               Continuous visibility
             </span>
             <p className="font-label text-ares-muted">Step 02 · Monitoring</p>
-            <p className="mt-2 text-[15px] font-normal text-ares-tertiary">AI Search IQ Platform</p>
+            <p className="mt-2 text-[15px] font-normal text-ares-tertiary">Growth</p>
             <p className="font-display-num mt-6 text-[48px]">
               <CountUp value={1000} prefix="$" duration={1.0} />
             </p>
@@ -263,6 +271,22 @@ export default function Pricing() {
             <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary w-full">
               Start with the report
             </Link>
+          </div>
+
+          {/* Card 3 — Enterprise */}
+          <div data-price-card className="action-card flex flex-col !p-10">
+            <p className="font-label text-ares-muted">White-label</p>
+            <p className="mt-2 text-[15px] font-normal text-ares-tertiary">Enterprise</p>
+            <p className="font-display-num mt-6 text-[48px]">Custom</p>
+            <p className="mt-1 text-[10px] font-light uppercase tracking-[0.08em] text-ares-muted">
+              for businesses &amp; agencies reselling under their own brand
+            </p>
+            <div className="section-rule mt-6" />
+            <Checklist items={ENTERPRISE_FEATURES} staggerFrom={cardsInView} />
+            <div className="mt-8 flex-1" />
+            <a href="mailto:hello@ai-search-iq.io" className="btn-secondary w-full">
+              Talk to us
+            </a>
           </div>
         </div>
         <p

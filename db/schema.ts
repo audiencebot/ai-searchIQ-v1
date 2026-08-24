@@ -41,7 +41,13 @@ export const tenants = mysqlTable("tenants", {
   name: varchar("name", { length: 255 }).notNull(),
   industry: varchar("industry", { length: 255 }).notNull(),
   websiteUrl: varchar("websiteUrl", { length: 512 }).notNull(),
-  plan: varchar("plan", { length: 64 }).notNull().default("platform"),
+  // Three-tier pricing: 'report' ($399 one-time baseline), 'growth'
+  // ($1,000/mo per tenant), 'enterprise' (white-label, custom pricing).
+  plan: mysqlEnum("plan", ["report", "growth", "enterprise"])
+    .notNull()
+    .default("report"),
+  // Enterprise tenants resell under their own brand (portal + reports).
+  whiteLabel: boolean("whiteLabel").notNull().default(false),
   // Business profile = misrepresentation ground truth (settings.md §S3).
   profile: json("profile").$type<{
     legalName: string;
