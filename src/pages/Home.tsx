@@ -126,7 +126,7 @@ const FloatingKpiTile = memo(function FloatingKpiTile() {
 /* ------------------------------- engine chips ------------------------------ */
 
 function EngineGlyph({ kind }: { kind: string }) {
-  const stroke = '#2D1B11';
+  const stroke = '#07161D';
   switch (kind) {
     case 'hexagon':
       return (
@@ -253,7 +253,7 @@ function MockUnderstand({ active }: { active: boolean }) {
               key={i}
               className="h-7 rounded-ares transition-all duration-500"
               style={{
-                backgroundColor: `rgba(203,77,34,${active ? a : 0.05})`,
+                backgroundColor: `rgba(50,137,174,${active ? a : 0.05})`,
                 transitionDelay: `${i * 30}ms`,
                 transform: active ? 'scale(1)' : 'scale(0.9)',
                 opacity: active ? 1 : 0.4,
@@ -262,8 +262,8 @@ function MockUnderstand({ active }: { active: boolean }) {
           ))}
         </div>
       </div>
-      <div className="action-card flex items-start gap-3 border-l-[3px] !border-l-ares-primaryDark !p-4">
-        <Icon icon={icons.dangerTriangle} width={18} height={18} className="mt-0.5 shrink-0 text-ares-primaryDark" />
+      <div className="action-card flex items-start gap-3 border-l-[3px] !border-l-ares-primary !p-4">
+        <Icon icon={icons.dangerTriangle} width={18} height={18} className="mt-0.5 shrink-0 text-ares-primary" />
         <div>
           <p className="text-[12px] font-normal text-ares-text">Wrong service area stated</p>
           <p className="mt-0.5 text-[10px] font-light text-ares-muted">
@@ -908,16 +908,16 @@ export default function Home() {
         <div className="rounded-ares bg-ares-tertiary px-6 py-16 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center">
             <svg viewBox="0 0 48 48" className="h-12 w-12">
-              <g fill="none" stroke="#CB4D22" strokeWidth="1.6" strokeLinecap="round">
+              <g fill="none" stroke="#3289AE" strokeWidth="1.6" strokeLinecap="round">
                 <path d="M 42.5 24 A 18.5 18.5 0 1 1 24 5.5" />
                 <path d="M 36.2 24 A 12.2 12.2 0 1 1 24 11.8" />
                 <path d="M 30 24 A 6 6 0 1 1 24 18" />
               </g>
               <g ref={needleRef}>
-                <line x1="24" y1="24" x2="37.8" y2="10.2" stroke="#CB4D22" strokeWidth="1.8" strokeLinecap="round" />
-                <circle cx="37.8" cy="10.2" r="2.4" fill="#CB4D22" />
+                <line x1="24" y1="24" x2="37.8" y2="10.2" stroke="#3289AE" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="37.8" cy="10.2" r="2.4" fill="#3289AE" />
               </g>
-              <circle cx="24" cy="24" r="2" fill="#CB4D22" />
+              <circle cx="24" cy="24" r="2" fill="#3289AE" />
             </svg>
           </div>
           <p className="font-label mt-6 text-ares-primary">Next step</p>

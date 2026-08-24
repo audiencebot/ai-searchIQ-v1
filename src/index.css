@@ -4,34 +4,34 @@
 
 @layer base {
   :root {
-    --background: 30 21% 91%;
-    --foreground: 17 44% 12%;
-    --card: 30 33% 98%;
-    --card-foreground: 17 44% 12%;
+    --background: 195 40% 98%;
+    --foreground: 199 61% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 199 61% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 17 44% 12%;
-    --primary: 17 72% 46%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 29 29% 88%;
-    --secondary-foreground: 16 26% 19%;
-    --muted: 29 29% 88%;
-    --muted-foreground: 25 11% 49%;
-    --accent: 29 29% 88%;
-    --accent-foreground: 17 44% 12%;
-    --destructive: 14 75% 38%;
+    --popover-foreground: 199 61% 7%;
+    --primary: 199 61% 7%;
+    --primary-foreground: 195 40% 98%;
+    --secondary: 199 100% 87%;
+    --secondary-foreground: 199 61% 7%;
+    --muted: 199 100% 87%;
+    --muted-foreground: 201 16% 24%;
+    --accent: 198 55% 44%;
+    --accent-foreground: 195 40% 98%;
+    --destructive: 199 58% 35%;
     --destructive-foreground: 0 0% 98%;
-    --border: 29 29% 88%;
-    --input: 29 29% 88%;
-    --ring: 17 72% 46%;
+    --border: 199 100% 87%;
+    --input: 199 100% 87%;
+    --ring: 198 55% 44%;
     --radius: 2px;
-    --sidebar-background: 17 44% 12%;
-    --sidebar-foreground: 29 29% 88%;
-    --sidebar-primary: 17 72% 46%;
+    --sidebar-background: 199 50% 9%;
+    --sidebar-foreground: 199 100% 87%;
+    --sidebar-primary: 198 55% 44%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 17 30% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 17 20% 22%;
-    --sidebar-ring: 17 72% 46%;
+    --sidebar-accent: 199 48% 12%;
+    --sidebar-accent-foreground: 195 40% 98%;
+    --sidebar-border: 201 16% 24%;
+    --sidebar-ring: 198 55% 44%;
   }
 }
 
@@ -49,7 +49,7 @@
     line-height: 19.5px;
   }
   ::selection {
-    background: rgba(203, 77, 34, 0.18);
+    background: rgba(50, 137, 174, 0.18);
   }
 }
 
@@ -89,7 +89,7 @@
   .section-rule {
     @apply w-full border-0;
     height: 1px;
-    background: #eae0d6;
+    background: rgba(189, 234, 255, 0.65);
   }
   .section-rule-dark {
     @apply w-full border-0;
@@ -112,7 +112,7 @@
 
   /* ---------- Buttons (design.md §5.1) ---------- */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-ares border border-ares-primary bg-ares-primary text-white transition-colors duration-200 ease-in-out;
+    @apply inline-flex items-center justify-center gap-2 rounded-ares border border-ares-tertiary bg-ares-tertiary text-[#F8FBFC] transition-colors duration-200 ease-in-out;
     padding: 10px 16px;
     font-size: 12px;
     line-height: 16px;
@@ -121,14 +121,14 @@
     text-transform: uppercase;
   }
   .btn-primary:hover {
-    @apply bg-ares-primaryDark border-ares-primaryDark;
+    @apply bg-ares-ink border-ares-ink;
   }
   .btn-primary:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(203, 77, 34, 0.35);
+    box-shadow: 0 0 0 2px rgba(50, 137, 174, 0.35);
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-ares border border-ares-border bg-transparent text-ares-secondarytext transition-colors duration-200 ease-in-out;
+    @apply inline-flex items-center justify-center gap-2 rounded-ares border border-ares-muted bg-transparent text-ares-text transition-colors duration-200 ease-in-out;
     padding: 10px 16px;
     font-size: 12px;
     line-height: 16px;
@@ -137,12 +137,12 @@
     text-transform: uppercase;
   }
   .btn-secondary:hover {
-    @apply border-ares-primary text-ares-primary;
+    @apply border-ares-primaryDark text-ares-primaryDark;
   }
   .btn-secondary-dark {
     @apply inline-flex items-center justify-center gap-2 rounded-ares border bg-transparent transition-colors duration-200 ease-in-out;
-    color: #eae0d6;
-    border-color: rgba(234, 224, 214, 0.4);
+    color: #bdeaff;
+    border-color: rgba(189, 234, 255, 0.4);
     padding: 10px 16px;
     font-size: 12px;
     line-height: 16px;
@@ -160,14 +160,14 @@
   }
   .kpi-tile:hover {
     transform: translateY(-2px);
-    box-shadow: 0 2px 24px rgba(45, 27, 17, 0.08);
+    box-shadow: 0 2px 24px rgba(7, 22, 29, 0.08);
   }
   .action-card {
     @apply rounded-ares border border-ares-border bg-ares-card p-4 transition-all duration-200 ease-in-out;
   }
   .action-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 2px 24px rgba(45, 27, 17, 0.08);
+    box-shadow: 0 2px 24px rgba(7, 22, 29, 0.08);
   }
   .badge-pill {
     @apply inline-flex items-center gap-1.5 rounded-ares border border-ares-border bg-ares-card;
@@ -192,16 +192,16 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 8px 12px;
-    border-bottom: 1px solid #eae0d6;
+    border-bottom: 1px solid rgba(189, 234, 255, 0.65);
   }
   .data-table td {
     padding: 10px 12px;
-    border-bottom: 1px solid #eae0d6;
+    border-bottom: 1px solid rgba(189, 234, 255, 0.65);
   }
   .bar-track {
     @apply w-full rounded-ares;
     height: 6px;
-    background: #eae0d6;
+    background: rgba(189, 234, 255, 0.5);
     overflow: hidden;
   }
   .bar-fill {

@@ -164,9 +164,9 @@ export default function Pricing() {
       if (highlighted) {
         gsap.fromTo(
           highlighted,
-          { borderColor: 'rgba(203,77,34,0)' },
+          { borderColor: 'rgba(50,137,174,0)' },
           {
-            borderColor: 'rgba(203,77,34,1)',
+            borderColor: 'rgba(50,137,174,1)',
             duration: 0.8,
             ease: 'power2.inOut',
             scrollTrigger: { trigger: highlighted, start: 'top 80%', once: true },
@@ -244,7 +244,7 @@ export default function Pricing() {
             data-price-card
             data-price-card-highlight
             className="action-card relative flex flex-col border !p-10"
-            style={{ borderColor: 'rgba(203,77,34,0)' }}
+            style={{ borderColor: 'rgba(50,137,174,0)' }}
           >
             <span className="badge-pill absolute right-6 top-6 text-ares-primary">
               Continuous visibility
@@ -306,7 +306,7 @@ export default function Pricing() {
             <thead>
               <tr>
                 <th className="w-1/3">Capability</th>
-                <th style={{ backgroundColor: 'rgba(203,77,34,0.04)' }}>AI Search IQ</th>
+                <th style={{ backgroundColor: 'rgba(50,137,174,0.05)' }}>AI Search IQ</th>
                 <th>Typical AI visibility tools</th>
               </tr>
             </thead>
@@ -314,7 +314,7 @@ export default function Pricing() {
               {COMPARISON.map((row) => (
                 <tr key={row.aspect} data-cmp-row>
                   <td className="text-ares-secondarytext">{row.aspect}</td>
-                  <td className="font-normal text-ares-primary" style={{ backgroundColor: 'rgba(203,77,34,0.04)' }}>
+                  <td className="font-normal text-ares-primary" style={{ backgroundColor: 'rgba(50,137,174,0.05)' }}>
                     {row.ours}
                   </td>
                   <td className="text-ares-secondarytext">{row.theirs}</td>

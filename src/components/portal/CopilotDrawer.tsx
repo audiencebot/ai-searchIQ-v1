@@ -23,7 +23,7 @@ export default function CopilotDrawer() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Ask AI Search IQ"
-        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-ares bg-ares-primary text-white shadow-paper transition-colors duration-200 hover:bg-ares-primaryDark"
+        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-ares bg-ares-tertiary text-[#F8FBFC] shadow-paper transition-colors duration-200 hover:bg-ares-ink"
       >
         <Icon icon={icons.chatRoundDots} width={20} height={20} />
       </button>

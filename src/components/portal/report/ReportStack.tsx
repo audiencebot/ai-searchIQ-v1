@@ -39,8 +39,8 @@ function heatAlpha(intensity: number): number {
 }
 
 const SEVERITY_STYLE = {
-  high: { bar: 'border-l-ares-primaryDark', icon: icons.dangerTriangle, iconClass: 'text-ares-primaryDark', label: 'High' },
-  medium: { bar: 'border-l-ares-primary', icon: icons.infoCircle, iconClass: 'text-ares-primary', label: 'Medium' },
+  high: { bar: 'border-l-ares-primary', icon: icons.dangerTriangle, iconClass: 'text-ares-primary', label: 'High' },
+  medium: { bar: 'border-l-ares-severityMedium', icon: icons.infoCircle, iconClass: 'text-ares-severityMedium', label: 'Medium' },
   low: { bar: 'border-l-ares-muted', icon: icons.handMoney, iconClass: 'text-ares-muted', label: 'Low' },
 } as const;
 
@@ -69,7 +69,7 @@ function DeepLink({
         if (e.key === 'Enter') navigate(to);
       }}
       className={cn(
-        'cursor-pointer rounded-ares transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_#CB4D22]',
+        'cursor-pointer rounded-ares transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_#3289AE]',
         className
       )}
     >
@@ -436,7 +436,7 @@ export default function ReportStack({ payload }: { payload: ReportPayload }) {
             <span
               key={a}
               className="h-3 w-6 rounded-ares"
-              style={{ backgroundColor: `rgba(203,77,34,${a})` }}
+              style={{ backgroundColor: `rgba(50,137,174,${a})` }}
             />
           ))}
           <span className="text-[10px] font-light text-ares-muted">High</span>
@@ -691,8 +691,8 @@ function HeatCell({
       transition={{ duration: 0.3, delay, ease: EASE }}
       onClick={() => navigate('/app/monitoring')}
       title={`${prompt} × ${engine} · ${Math.round(intensity * 100)}% — Open in portal`}
-      className="block h-7 w-full min-w-[44px] rounded-ares transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_#CB4D22]"
-      style={{ backgroundColor: `rgba(203,77,34,${heatAlpha(intensity)})` }}
+      className="block h-7 w-full min-w-[44px] rounded-ares transition-shadow duration-150 hover:shadow-[inset_0_0_0_1px_#3289AE]"
+      style={{ backgroundColor: `rgba(50,137,174,${heatAlpha(intensity)})` }}
     />
   );
 }
@@ -715,7 +715,7 @@ function DeepTr({
       onClick={() => navigate(to)}
       title="Open in portal"
       className={cn(
-        'cursor-pointer hover:shadow-[inset_0_0_0_1px_#CB4D22]',
+        'cursor-pointer hover:shadow-[inset_0_0_0_1px_#3289AE]',
         highlight && 'bg-ares-primary/[0.04]',
         className
       )}

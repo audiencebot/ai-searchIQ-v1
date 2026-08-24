@@ -238,7 +238,7 @@ export function SectionHeader({
 /* ------------------------------ engine glyphs ------------------------------ */
 
 export function EngineGlyph({ kind }: { kind: string }) {
-  const stroke = '#2D1B11';
+  const stroke = '#07161D';
   switch (kind) {
     case 'hexagon':
       return (
@@ -305,14 +305,14 @@ export const ENGINES = [
 export function RadarMark({ size = 48, className }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 48 48" className={className} style={{ width: size, height: size }}>
-      <g fill="none" stroke="#CB4D22" strokeWidth="1.6" strokeLinecap="round">
+      <g fill="none" stroke="#3289AE" strokeWidth="1.6" strokeLinecap="round">
         <path d="M 42.5 24 A 18.5 18.5 0 1 1 24 5.5" />
         <path d="M 36.2 24 A 12.2 12.2 0 1 1 24 11.8" />
         <path d="M 30 24 A 6 6 0 1 1 24 18" />
       </g>
-      <line x1="24" y1="24" x2="37.8" y2="10.2" stroke="#CB4D22" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="37.8" cy="10.2" r="2.4" fill="#CB4D22" />
-      <circle cx="24" cy="24" r="2" fill="#CB4D22" />
+      <line x1="24" y1="24" x2="37.8" y2="10.2" stroke="#3289AE" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="37.8" cy="10.2" r="2.4" fill="#3289AE" />
+      <circle cx="24" cy="24" r="2" fill="#3289AE" />
     </svg>
   );
 }

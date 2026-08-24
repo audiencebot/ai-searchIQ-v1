@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" width="240" height="48">
-  <g fill="none" stroke="#CB4D22" stroke-width="1.6" stroke-linecap="round">
+  <g fill="none" stroke="#3289AE" stroke-width="1.6" stroke-linecap="round">
     <path d="M 42.5 24 A 18.5 18.5 0 1 1 24 5.5"/>
     <path d="M 36.2 24 A 12.2 12.2 0 1 1 24 11.8"/>
     <path d="M 30 24 A 6 6 0 1 1 24 18"/>
     <line x1="24" y1="24" x2="37.8" y2="10.2" stroke-width="1.8"/>
   </g>
-  <circle cx="24" cy="24" r="2" fill="#CB4D22"/>
-  <circle cx="37.8" cy="10.2" r="2.4" fill="#CB4D22"/>
-  <text x="54" y="30" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="300" letter-spacing="1.7" fill="#2D1B11">AI SEARCH IQ</text>
+  <circle cx="24" cy="24" r="2" fill="#3289AE"/>
+  <circle cx="37.8" cy="10.2" r="2.4" fill="#3289AE"/>
+  <text x="54" y="30" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="300" letter-spacing="1.7" fill="#07161D">AI SEARCH IQ</text>
 </svg>

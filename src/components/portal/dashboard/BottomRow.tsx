@@ -44,14 +44,14 @@ function OpenAlertsCard({ data, isLoading }: { data: SidebarData; isLoading: boo
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: i * 0.08, ease: EASE_OUT }}
               className="rounded-ares border border-ares-border bg-ares-card p-3"
-              style={{ borderLeft: `3px solid ${SEVERITY_BAR[alert.severity] ?? '#8A7A6E'}` }}
+              style={{ borderLeft: `3px solid ${SEVERITY_BAR[alert.severity] ?? '#344148'}` }}
             >
               <div className="flex items-center gap-2">
                 <Icon
                   icon={icons.dangerTriangle}
                   width={16}
                   height={16}
-                  style={{ color: SEVERITY_BAR[alert.severity] ?? '#8A7A6E' }}
+                  style={{ color: SEVERITY_BAR[alert.severity] ?? '#344148' }}
                 />
                 <p className="text-[12px] font-normal text-ares-text">{alert.title}</p>
               </div>

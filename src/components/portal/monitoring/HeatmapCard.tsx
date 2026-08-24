@@ -6,10 +6,10 @@ import type { CellSelection } from './ResponseDrawer';
 
 type HeatmapData = RouterOutputs['monitoring']['heatmap'] | undefined;
 
-/** Heatmap alpha ramp: rgba(203,77,34,α), α ∈ 0.08…0.9 (design.md §2). */
+/** Heatmap alpha ramp: rgba(50,137,174,α), α ∈ 0.08…0.9 (design.md §2). */
 export function cellAlpha(intensity: number): string {
   const a = Math.min(0.9, Math.max(0.08, 0.08 + intensity * 0.82));
-  return `rgba(203,77,34,${a.toFixed(2)})`;
+  return `rgba(50,137,174,${a.toFixed(2)})`;
 }
 
 const LEGEND_STEPS = [0, 0.25, 0.5, 0.75, 1];
@@ -118,7 +118,7 @@ export const HeatmapCard = forwardRef<
                                 engineLabel: cell.engineLabel,
                               })
                             }
-                            className="h-7 w-full rounded-ares transition-shadow duration-150 hover:shadow-[0_0_0_1px_#CB4D22]"
+                            className="h-7 w-full rounded-ares transition-shadow duration-150 hover:shadow-[0_0_0_1px_#3289AE]"
                             style={{ background: cellAlpha(cell.intensity) }}
                             aria-label={`${row.text} on ${cell.engineLabel}: ${Math.round(cell.intensity * 100)}%`}
                           />

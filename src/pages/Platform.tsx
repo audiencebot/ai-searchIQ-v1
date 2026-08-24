@@ -133,7 +133,7 @@ function MockMonitoring({ active }: { active: boolean }) {
                 key={i}
                 className="h-7 rounded-ares transition-all duration-500"
                 style={{
-                  backgroundColor: `rgba(203,77,34,${active ? a : 0.05})`,
+                  backgroundColor: `rgba(50,137,174,${active ? a : 0.05})`,
                   opacity: active ? 1 : 0.4,
                   transform: active ? 'scale(1)' : 'scale(0.9)',
                   transitionDelay: `${i * 30}ms`,
@@ -149,7 +149,7 @@ function MockMonitoring({ active }: { active: boolean }) {
           <span
             key={a}
             className="h-3 w-6 rounded-ares"
-            style={{ backgroundColor: `rgba(203,77,34,${a})` }}
+            style={{ backgroundColor: `rgba(50,137,174,${a})` }}
           />
         ))}
         <span>High</span>
@@ -173,7 +173,7 @@ function MockCompetitive({ active }: { active: boolean }) {
           key={row.rank}
           className="flex items-center gap-3 border-b border-ares-border px-2 py-2.5 transition-all duration-500 last:border-b-0"
           style={{
-            backgroundColor: row.tenant ? 'rgba(203,77,34,0.04)' : undefined,
+            backgroundColor: row.tenant ? 'rgba(50,137,174,0.05)' : undefined,
             opacity: active ? 1 : 0,
             transform: active ? 'translateY(0)' : 'translateY(10px)',
             transitionDelay: `${i * 60}ms`,
@@ -198,7 +198,7 @@ function MockCompetitive({ active }: { active: boolean }) {
 function MockAlert({ active }: { active: boolean }) {
   return (
     <div
-      className="action-card w-full border-l-[3px] !border-l-ares-primaryDark !p-4 transition-all duration-500"
+      className="action-card w-full border-l-[3px] !border-l-ares-primary !p-4 transition-all duration-500"
       style={{
         opacity: active ? 1 : 0,
         transform: active ? 'translateX(0)' : 'translateX(-16px)',
@@ -209,7 +209,7 @@ function MockAlert({ active }: { active: boolean }) {
           icon={icons.dangerTriangle}
           width={18}
           height={18}
-          className="mt-0.5 shrink-0 text-ares-primaryDark"
+          className="mt-0.5 shrink-0 text-ares-primary"
         />
         <div>
           <p className="text-[12px] font-normal text-ares-text">Outdated service area</p>
@@ -548,9 +548,9 @@ export default function Platform() {
       if (composite) {
         gsap.fromTo(
           composite,
-          { backgroundColor: 'rgba(203,77,34,0.16)' },
+          { backgroundColor: 'rgba(50,137,174,0.16)' },
           {
-            backgroundColor: 'rgba(203,77,34,0.04)',
+            backgroundColor: 'rgba(50,137,174,0.05)',
             duration: 1.2,
             ease: 'power2.out',
             scrollTrigger: { trigger: composite, start: 'top 85%', once: true },

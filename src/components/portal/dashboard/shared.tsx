@@ -20,9 +20,9 @@ export const ENGINE_LABELS: Record<string, string> = {
 };
 
 export const SEVERITY_BAR: Record<string, string> = {
-  high: '#B33F19',
-  medium: '#CB4D22',
-  low: '#8A7A6E',
+  high: '#3289AE',
+  medium: '#83D6FA',
+  low: '#344148',
 };
 
 export const EASE_OUT = [0.22, 1, 0.36, 1] as [number, number, number, number];

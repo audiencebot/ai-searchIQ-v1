@@ -369,8 +369,8 @@ export default function SampleReport() {
       gsap.utils.toArray<HTMLElement>('[data-pulse-tint]').forEach((el) => {
         gsap.fromTo(
           el,
-          { backgroundColor: 'rgba(203,77,34,0.16)' },
-          { backgroundColor: 'rgba(203,77,34,0.04)', duration: 1.2, ease: 'power2.out', scrollTrigger: st(el) }
+          { backgroundColor: 'rgba(50,137,174,0.16)' },
+          { backgroundColor: 'rgba(50,137,174,0.05)', duration: 1.2, ease: 'power2.out', scrollTrigger: st(el) }
         );
       });
 
@@ -378,8 +378,8 @@ export default function SampleReport() {
       gsap.utils.toArray<HTMLElement>('[data-pulse-missing]').forEach((el) => {
         gsap.fromTo(
           el,
-          { backgroundColor: 'rgba(203,77,34,0.12)' },
-          { backgroundColor: 'rgba(203,77,34,0)', duration: 1.2, ease: 'power2.out', scrollTrigger: st(el) }
+          { backgroundColor: 'rgba(50,137,174,0.12)' },
+          { backgroundColor: 'rgba(50,137,174,0)', duration: 1.2, ease: 'power2.out', scrollTrigger: st(el) }
         );
       });
 
@@ -427,7 +427,7 @@ export default function SampleReport() {
       {/* S1 — Report toolbar (sticky, screen only) */}
       <div
         data-report-toolbar
-        className="sticky top-16 z-40 border-b border-white/[0.08] bg-[rgba(45,27,17,0.96)] backdrop-blur-[8px]"
+        className="sticky top-16 z-40 border-b border-white/[0.08] bg-[rgba(7,22,29,0.96)] backdrop-blur-[8px]"
       >
         <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-2.5">
@@ -702,7 +702,7 @@ export default function SampleReport() {
                           <div
                             className="group relative h-7 rounded-ares transition-all duration-500"
                             style={{
-                              backgroundColor: `rgba(203,77,34,${heatmap.inView ? a : 0.05})`,
+                              backgroundColor: `rgba(50,137,174,${heatmap.inView ? a : 0.05})`,
                               opacity: heatmap.inView ? 1 : 0.4,
                               transform: heatmap.inView ? 'scale(1)' : 'scale(0.9)',
                               transitionDelay: `${idx * 30}ms`,
@@ -722,7 +722,7 @@ export default function SampleReport() {
             <div className="mt-4 flex items-center gap-2 text-[9px] uppercase tracking-[0.08em] text-ares-muted">
               <span>Low</span>
               {[0.1, 0.3, 0.5, 0.7, 0.9].map((a) => (
-                <span key={a} className="h-3 w-6 rounded-ares" style={{ backgroundColor: `rgba(203,77,34,${a})` }} />
+                <span key={a} className="h-3 w-6 rounded-ares" style={{ backgroundColor: `rgba(50,137,174,${a})` }} />
               ))}
               <span>High</span>
             </div>
@@ -794,8 +794,8 @@ export default function SampleReport() {
                 data-alert-row
                 className={cn(
                   'rounded-ares border border-ares-border bg-ares-card p-4 shadow-paper border-l-[3px]',
-                  alert.severity === 'high' && 'border-l-ares-primaryDark',
-                  alert.severity === 'medium' && 'border-l-ares-primary',
+                  alert.severity === 'high' && 'border-l-ares-primary',
+                  alert.severity === 'medium' && 'border-l-ares-severityMedium',
                   alert.severity === 'low' && 'border-l-ares-muted'
                 )}
               >
@@ -806,8 +806,8 @@ export default function SampleReport() {
                     height={18}
                     className={cn(
                       'mt-0.5 shrink-0',
-                      alert.severity === 'high' && 'text-ares-primaryDark',
-                      alert.severity === 'medium' && 'text-ares-primary',
+                      alert.severity === 'high' && 'text-ares-primary',
+                      alert.severity === 'medium' && 'text-ares-severityMedium',
                       alert.severity === 'low' && 'text-ares-muted'
                     )}
                   />

@@ -16,12 +16,12 @@ type TrendData = RouterOutputs['dashboard']['trend'] | undefined;
 type Point = NonNullable<TrendData>['points'][number];
 
 const SERIES = [
-  { key: 'composite', label: 'Composite', color: '#CB4D22', width: 2 },
-  { key: 'mentionRate', label: 'Mention rate', color: '#8A7A6E', width: 1.5 },
-  { key: 'recommendationShare', label: 'Recommendation share', color: '#7A6458', width: 1.5 },
-  { key: 'citationStrength', label: 'Citation strength', color: '#B33F19', width: 1.5 },
-  { key: 'promptCoverage', label: 'Prompt coverage', color: '#3E2923', width: 1.5 },
-  { key: 'sentimentAccuracy', label: 'Sentiment accuracy', color: '#C89B7B', width: 1.5 },
+  { key: 'composite', label: 'Composite', color: '#3289AE', width: 2 },
+  { key: 'mentionRate', label: 'Mention rate', color: '#344148', width: 1.5 },
+  { key: 'recommendationShare', label: 'Recommendation share', color: '#0B1A21', width: 1.5 },
+  { key: 'citationStrength', label: 'Citation strength', color: '#256B8C', width: 1.5 },
+  { key: 'promptCoverage', label: 'Prompt coverage', color: '#10242D', width: 1.5 },
+  { key: 'sentimentAccuracy', label: 'Sentiment accuracy', color: '#83D6FA', width: 1.5 },
 ] as const;
 
 type SeriesKey = (typeof SERIES)[number]['key'];
@@ -99,7 +99,7 @@ export function TrendChart({
               >
                 <span
                   className="h-[2px] w-3 rounded-ares"
-                  style={{ background: on ? s.color : '#EAE0D6' }}
+                  style={{ background: on ? s.color : '#BDEAFF' }}
                 />
                 {s.label}
               </button>
@@ -123,33 +123,33 @@ export function TrendChart({
         <div className="mt-6 h-[280px] w-full" key={days}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartRows} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
-              <CartesianGrid stroke="#EBE3DC" strokeWidth={1} vertical={false} />
+              <CartesianGrid stroke="rgba(189,234,255,0.45)" strokeWidth={1} vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 11, fill: '#8A7A6E', fontFamily: 'Inter', fontWeight: 300 }}
+                tick={{ fontSize: 11, fill: '#344148', fontFamily: 'Inter', fontWeight: 300 }}
                 tickLine={false}
-                axisLine={{ stroke: '#EAE0D6' }}
+                axisLine={{ stroke: '#BDEAFF' }}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fontSize: 11, fill: '#8A7A6E', fontFamily: 'Inter', fontWeight: 300 }}
+                tick={{ fontSize: 11, fill: '#344148', fontFamily: 'Inter', fontWeight: 300 }}
                 tickLine={false}
                 axisLine={false}
               />
               <Tooltip
                 content={<TrendTooltip />}
-                cursor={{ stroke: '#CB4D22', strokeWidth: 1, strokeDasharray: '3 3' }}
+                cursor={{ stroke: '#3289AE', strokeWidth: 1, strokeDasharray: '3 3' }}
               />
               {baselineLabel && (
                 <ReferenceLine
                   x={baselineLabel}
-                  stroke="#8A7A6E"
+                  stroke="#344148"
                   strokeDasharray="4 3"
                   label={{
                     value: 'Baseline',
                     position: 'insideTopLeft',
                     fontSize: 10,
-                    fill: '#8A7A6E',
+                    fill: '#344148',
                     fontFamily: 'Inter',
                   }}
                 />
@@ -162,7 +162,7 @@ export function TrendChart({
                   stroke={s.color}
                   strokeWidth={s.width}
                   dot={false}
-                  activeDot={{ r: 3, fill: s.color, stroke: '#FDFBF9' }}
+                  activeDot={{ r: 3, fill: s.color, stroke: '#FFFFFF' }}
                   animationDuration={1200}
                   animationEasing="ease-out"
                 />

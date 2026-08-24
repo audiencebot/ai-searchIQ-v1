@@ -25,16 +25,16 @@ export const SEVERITY_META = {
   high: {
     label: 'High',
     icon: icons.dangerTriangle,
-    iconClass: 'text-ares-primaryDark',
-    barClass: 'bg-ares-primaryDark',
-    borderClass: 'border-l-ares-primaryDark',
+    iconClass: 'text-ares-primary',
+    barClass: 'bg-ares-primary',
+    borderClass: 'border-l-ares-primary',
   },
   medium: {
     label: 'Medium',
     icon: icons.infoCircle,
-    iconClass: 'text-ares-primary',
-    barClass: 'bg-ares-primary',
-    borderClass: 'border-l-ares-primary',
+    iconClass: 'text-ares-severityMedium',
+    barClass: 'bg-ares-severityMedium',
+    borderClass: 'border-l-ares-severityMedium',
   },
   low: {
     label: 'Low',
