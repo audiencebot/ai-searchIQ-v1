@@ -12,6 +12,7 @@ import {
   alerts,
   actions,
   integrations,
+  integrationCache,
   reportMonths,
   copilotQa,
 } from "./schema";
@@ -31,6 +32,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   alerts: many(alerts),
   actions: many(actions),
   integrations: many(integrations),
+  integrationCache: many(integrationCache),
   reportMonths: many(reportMonths),
   copilotQa: many(copilotQa),
 }));
@@ -106,6 +108,13 @@ export const actionsRelations = relations(actions, ({ one }) => ({
 export const integrationsRelations = relations(integrations, ({ one }) => ({
   tenant: one(tenants, {
     fields: [integrations.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const integrationCacheRelations = relations(integrationCache, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [integrationCache.tenantId],
     references: [tenants.id],
   }),
 }));

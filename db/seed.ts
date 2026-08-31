@@ -260,7 +260,7 @@ const INTEGRATIONS: {
   { provider: "gbp", status: "connected", meta: { syncNote: "Synced today 06:00 · Northwind Advisory — Downtown" } },
   { provider: "gsc", status: "connected", meta: { syncNote: "Daily sync · 16 months retained" } },
   { provider: "ga4", status: "not_connected", meta: { note: "OAuth 2.0 · read-only scope" } },
-  { provider: "dataforseo", status: "platform_managed", meta: { note: "Included in your plan — no credential needed · refreshes weekly" } },
+  { provider: "dataforseo", status: "platform_managed", meta: { note: "Platform credentials (env) · live SERP/keywords/backlinks · responses cached 24h for cost control" } },
   { provider: "lighthouse", status: "not_connected", meta: { note: "Runs weekly after connection" } },
 ];
 

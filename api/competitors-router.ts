@@ -7,6 +7,133 @@ import { getDb } from "./queries/connection";
 import { findLatestCompleteScan } from "./queries/tenancy";
 import { requireTenant } from "./tenant";
 import { ENGINE_LABELS, type EngineId } from "./labels";
+import {
+  findDomainRank,
+  getBacklinkSummary,
+  getSearchVolume,
+  getSerpOrganic,
+  isDataForSeoConfigured,
+  type SerpOrganicItem,
+} from "./services/dataforseo";
+
+/** Best-effort domain for a brand name ("Atlas Capital" → "atlascapital.com"). */
+function brandToDomain(name: string): string {
+  return `${name.toLowerCase().replace(/[^a-z0-9]+/g, "")}.com`;
+}
+
+/** Hostname from a stored websiteUrl ("northwindadvisory.com" / full URL). */
+function toDomain(url: string): string {
+  return url.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+}
+
+type Difficulty = "Low" | "Medium" | "High";
+
+/** Volume-based difficulty heuristic (no dedicated difficulty endpoint wired). */
+function difficultyFor(volume: number): Difficulty {
+  if (volume >= 5000) return "High";
+  if (volume >= 1000) return "Medium";
+  return "Low";
+}
+
+interface SeoResearchPayload {
+  cachedNote: string;
+  serpOverlap: { keyword: string; tenantPos: number; competitorPos: number; volume: number }[];
+  keywordGaps: { keyword: string; competitorPos: number; volume: number; difficulty: Difficulty }[];
+  backlinks: {
+    tenantReferringDomains: number;
+    competitorReferringDomains: number;
+    rows: { domain: string; authority: "High" | "Medium" | "Low"; linksTo: string[] }[];
+  };
+}
+
+export type SeoResearchResult =
+  | ({ brandId: number; name: string; available: false } & {
+      dataSource: "sample";
+      fetchedAt: null;
+    })
+  | ({
+      brandId: number;
+      name: string;
+      available: true;
+      dataSource: "live" | "cache" | "sample";
+      fetchedAt: string | null;
+    } & SeoResearchPayload);
+
+/**
+ * Live DataForSEO research for one competitor: real search volumes, SERP
+ * positions for the tenant's service keywords, and backlink summaries for
+ * the tenant + competitor domains. Served from the cost cache when fresh.
+ */
+async function buildLiveResearch(
+  tenantId: number,
+  tenantDomain: string,
+  services: string[],
+  competitorName: string,
+): Promise<{
+  payload: SeoResearchPayload;
+  dataSource: "live" | "cache";
+  fetchedAt: Date;
+}> {
+  const competitorDomain = brandToDomain(competitorName);
+  const keywords = services.map((s) => s.toLowerCase()).slice(0, 4);
+
+  const volumeCall = getSearchVolume(keywords, tenantId);
+  const serpCalls = keywords.map((kw) => getSerpOrganic(kw, 2840, "en", 30, tenantId));
+  const tenantBacklinks = getBacklinkSummary(tenantDomain, tenantId);
+  const competitorBacklinks = getBacklinkSummary(competitorDomain, tenantId);
+
+  const [volumes, serps, tenantBl, competitorBl] = await Promise.all([
+    volumeCall,
+    Promise.all(serpCalls),
+    tenantBacklinks,
+    competitorBacklinks,
+  ]);
+
+  const calls = [volumes, ...serps, tenantBl, competitorBl];
+  const dataSource = calls.every((c) => c.dataSource === "cache") ? "cache" : "live";
+  const fetchedAt = new Date(Math.max(...calls.map((c) => c.fetchedAt.getTime())));
+  const totalCost = calls.reduce((sum, c) => sum + c.cost, 0);
+
+  const volumeByKeyword = new Map(volumes.data.map((v) => [v.keyword, v.volume]));
+  const serpByKeyword = new Map<string, SerpOrganicItem[]>(
+    keywords.map((kw, i) => [kw, serps[i]?.data ?? []]),
+  );
+
+  const serpOverlap = keywords.map((keyword) => {
+    const items = serpByKeyword.get(keyword) ?? [];
+    return {
+      keyword,
+      tenantPos: findDomainRank(items, tenantDomain),
+      competitorPos: findDomainRank(items, competitorDomain),
+      volume: volumeByKeyword.get(keyword) ?? 0,
+    };
+  });
+
+  const keywordGaps = serpOverlap
+    .filter((r) => r.competitorPos > 0 && (r.tenantPos === 0 || r.competitorPos < r.tenantPos))
+    .map((r) => ({
+      keyword: r.keyword,
+      competitorPos: r.competitorPos,
+      volume: r.volume,
+      difficulty: difficultyFor(r.volume),
+    }));
+
+  const fetchedLabel = fetchedAt.toISOString().slice(11, 16);
+  return {
+    dataSource,
+    fetchedAt,
+    payload: {
+      cachedNote: `DataForSEO · ${dataSource === "cache" ? "served from cache" : "live"} · fetched ${fetchedLabel} UTC · 24h cache · billed $${totalCost.toFixed(4)}`,
+      serpOverlap,
+      keywordGaps,
+      backlinks: {
+        tenantReferringDomains: tenantBl.data.referringDomains,
+        competitorReferringDomains: competitorBl.data.referringDomains,
+        rows: [],
+      },
+    },
+  };
+}
 
 /**
  * DataForSEO research stubs (competitors.md §S4) — static seeded sample data
@@ -192,26 +319,69 @@ export const competitorsRouter = createRouter({
       };
     }),
 
-  /** DataForSEO research stubs: SERP overlap / keyword gaps / backlinks. */
+  /**
+   * DataForSEO research: SERP overlap / keyword gaps / backlinks. Live (or
+   * cost-cached) when DATAFORSEO_* credentials are configured; falls back to
+   * the seeded sample fixtures when unconfigured or when the API errors, so
+   * the page never crashes. Every response carries dataSource + fetchedAt.
+   */
   seoResearch: authedQuery
     .input(z.object({ brandId: z.number().int().positive() }))
-    .query(async ({ ctx, input }) => {
-      const { tenantId } = await requireTenant(ctx.user.id);
+    .query(async ({ ctx, input }): Promise<SeoResearchResult> => {
+      const { tenantId, tenant } = await requireTenant(ctx.user.id);
       const competitor = await getDb().query.brands.findFirst({
         where: and(eq(brands.id, input.brandId), eq(brands.tenantId, tenantId)),
       });
       if (!competitor || competitor.isPrimary) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Competitor not found" });
       }
+
       const fixture = SEO_RESEARCH_FIXTURES[competitor.name];
-      if (!fixture) {
-        return { brandId: competitor.id, name: competitor.name, available: false as const };
+      const sampleFallback = (): SeoResearchResult =>
+        fixture
+          ? {
+              brandId: competitor.id,
+              name: competitor.name,
+              available: true as const,
+              dataSource: "sample" as const,
+              fetchedAt: null,
+              ...fixture,
+            }
+          : {
+              brandId: competitor.id,
+              name: competitor.name,
+              available: false as const,
+              dataSource: "sample" as const,
+              fetchedAt: null,
+            };
+
+      if (!isDataForSeoConfigured()) {
+        return sampleFallback();
       }
-      return {
-        brandId: competitor.id,
-        name: competitor.name,
-        available: true as const,
-        ...fixture,
-      };
+
+      try {
+        const services = tenant.profile?.services ?? [];
+        if (services.length === 0) return sampleFallback();
+        const live = await buildLiveResearch(
+          tenantId,
+          toDomain(tenant.websiteUrl),
+          services,
+          competitor.name,
+        );
+        return {
+          brandId: competitor.id,
+          name: competitor.name,
+          available: true as const,
+          dataSource: live.dataSource,
+          fetchedAt: live.fetchedAt.toISOString(),
+          ...live.payload,
+        };
+      } catch (err) {
+        console.warn(
+          `[dataforseo] live research failed for "${competitor.name}" — serving sample data:`,
+          err instanceof Error ? err.message : err,
+        );
+        return sampleFallback();
+      }
     }),
 });

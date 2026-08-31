@@ -399,6 +399,37 @@ export const integrations = mysqlTable(
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = typeof integrations.$inferInsert;
 
+// Third-party API response cache (cost control): providers like DataForSEO
+// bill per task, so identical live calls within the TTL are served from here.
+export const integrationCache = mysqlTable(
+  "integration_cache",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    provider: varchar("provider", { length: 64 }).notNull(),
+    endpoint: varchar("endpoint", { length: 255 }).notNull(),
+    // sha256 hex of the canonical (sorted) request params.
+    paramsHash: varchar("paramsHash", { length: 64 }).notNull(),
+    payload: json("payload").notNull(),
+    fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+    expiresAt: timestamp("expiresAt").notNull(),
+  },
+  (table) => ({
+    lookupUnique: uniqueIndex("integration_cache_lookup_unique").on(
+      table.tenantId,
+      table.provider,
+      table.endpoint,
+      table.paramsHash,
+    ),
+    tenantIdx: index("integration_cache_tenant_idx").on(table.tenantId),
+  }),
+);
+
+export type IntegrationCache = typeof integrationCache.$inferSelect;
+export type InsertIntegrationCache = typeof integrationCache.$inferInsert;
+
 // Monthly reports are stored as assembled snapshots (not derived live) so past
 // months render as frozen archives exactly as delivered — see report.md §S3.
 export const reportMonths = mysqlTable(

@@ -5,6 +5,7 @@ import { integrations, prompts, scans, tenantMembers, tenants, users } from "@db
 import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { requireTenant } from "./tenant";
+import { getAccountInfo, isDataForSeoConfigured } from "./services/dataforseo";
 
 /**
  * Integration card presentation metadata (settings.md §S2). Status + meta are
@@ -52,6 +53,22 @@ export const settingsRouter = createRouter({
     const byProvider = new Map(rows.map((r) => [r.provider, r]));
     return (Object.keys(INTEGRATION_META) as Provider[]).map((provider) => {
       const row = byProvider.get(provider);
+      // DataForSEO is real: platform credentials live in env, so its status
+      // reflects configuration rather than a tenant-flipped DB flag.
+      if (provider === "dataforseo") {
+        const configured = isDataForSeoConfigured();
+        return {
+          provider,
+          ...INTEGRATION_META[provider],
+          status: configured ? "connected" : "not_connected",
+          meta: {
+            ...(row?.meta ?? {}),
+            syncNote: configured
+              ? "Platform credentials configured · responses cached 24h for cost control"
+              : "Platform credentials not configured",
+          } as Record<string, string>,
+        };
+      }
       return {
         provider,
         ...INTEGRATION_META[provider],
@@ -59,6 +76,31 @@ export const settingsRouter = createRouter({
         meta: row?.meta ?? null,
       };
     });
+  }),
+
+  /**
+   * DataForSEO connectivity check (settings.md §S2): calls the free
+   * appendix/user_data endpoint and surfaces the live account balance.
+   */
+  testDataForSeoConnection: authedQuery.mutation(async ({ ctx }) => {
+    await requireTenant(ctx.user.id);
+    if (!isDataForSeoConfigured()) {
+      return { ok: false as const, error: "DATAFORSEO_LOGIN/PASSWORD are not configured" };
+    }
+    try {
+      const account = await getAccountInfo();
+      return {
+        ok: true as const,
+        login: account.login,
+        balance: account.balance,
+        total: account.total,
+      };
+    } catch (err) {
+      return {
+        ok: false as const,
+        error: err instanceof Error ? err.message : "DataForSEO connection failed",
+      };
+    }
   }),
 
   /** Connect/disconnect stub (settings.md §S2 — demo flips to Connected). */

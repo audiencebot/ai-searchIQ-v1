@@ -8,6 +8,40 @@ import type { CompetitorRef } from './GapDiagnostics';
 
 const fmtVolume = (v: number) => v.toLocaleString('en-US');
 
+/** HH:mm from an ISO timestamp (local time). */
+const fmtTime = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+/** Data provenance badge — live / cached / sample, per competitors.md §S4. */
+function DataSourceBadge({
+  dataSource,
+  fetchedAt,
+}: {
+  dataSource: 'live' | 'cache' | 'sample';
+  fetchedAt: string | null;
+}) {
+  const label =
+    dataSource === 'live'
+      ? `Live data${fetchedAt ? ` · ${fmtTime(fetchedAt)}` : ''}`
+      : dataSource === 'cache'
+        ? `Cached${fetchedAt ? ` · ${fmtTime(fetchedAt)}` : ''}`
+        : 'Sample data';
+  return (
+    <span
+      className={cn(
+        'badge-pill',
+        dataSource === 'live' && 'border-ares-primary/40 text-ares-primary',
+        dataSource === 'cache' && 'text-ares-secondarytext',
+        dataSource === 'sample' && 'text-ares-muted'
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 /**
  * DataForSEO research views (competitors.md §S4): SERP overlap, keyword gaps,
  * backlinks — one click from each competitor via the chip selector.
@@ -32,7 +66,12 @@ export default function SeoResearch({
   return (
     <section className="rounded-ares border border-ares-border bg-ares-card p-4 md:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="font-label text-ares-primary">Research · DataForSEO</p>
+        <div className="flex items-center gap-3">
+          <p className="font-label text-ares-primary">Research · DataForSEO</p>
+          {query.data && (
+            <DataSourceBadge dataSource={query.data.dataSource} fetchedAt={query.data.fetchedAt} />
+          )}
+        </div>
         {/* Competitor selector chips */}
         <div className="flex flex-wrap items-center gap-2">
           {competitors.map((c) => (

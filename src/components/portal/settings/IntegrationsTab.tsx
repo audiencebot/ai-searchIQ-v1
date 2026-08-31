@@ -21,6 +21,167 @@ const PROVIDER_ICON: Record<Provider, IconifyIcon> = {
   lighthouse: icons.shieldCheck,
 };
 
+/** Standard integration card (GBP / GSC / GA4 / Lighthouse — OAuth stubs). */
+function GenericCard({
+  integration,
+  pending,
+  onConnect,
+  onReconnect,
+  onDisconnect,
+}: {
+  integration: Integration;
+  pending: boolean;
+  onConnect: () => void;
+  onReconnect: () => void;
+  onDisconnect: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ares border border-ares-border bg-ares-surface">
+          <Icon
+            icon={PROVIDER_ICON[integration.provider]}
+            width={20}
+            height={20}
+            className="text-ares-primary"
+          />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-normal text-ares-text">{integration.name}</p>
+          <p className="mt-0.5 text-[11px] font-light leading-[16px] text-ares-muted">
+            {integration.role}
+          </p>
+        </div>
+        {integration.status === 'connected' && (
+          <span className="badge-pill border-ares-primary/40 text-ares-primary">
+            <Icon icon={icons.checkCircle} width={12} height={12} />
+            Connected
+          </span>
+        )}
+        {integration.status === 'platform_managed' && (
+          <span className="badge-pill text-ares-muted">Platform-managed</span>
+        )}
+        {integration.status === 'not_connected' && (
+          <button className="btn-primary !px-3 !py-1.5 text-[10px]" onClick={onConnect}>
+            Connect
+          </button>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-ares-border2 pt-3">
+        {integration.status === 'connected' && (
+          <>
+            <span className="text-[10px] font-light text-ares-muted">
+              {integration.meta?.syncNote ?? 'Sync active'}
+            </span>
+            <span className="ml-auto flex gap-3">
+              <button
+                className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-link transition-colors duration-200 hover:text-ares-primary"
+                disabled={pending}
+                onClick={onReconnect}
+              >
+                Reconnect
+              </button>
+              <button
+                className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-link transition-colors duration-200 hover:text-ares-primaryDark"
+                disabled={pending}
+                onClick={onDisconnect}
+              >
+                Disconnect
+              </button>
+            </span>
+          </>
+        )}
+        {integration.status === 'not_connected' && (
+          <span className="text-[10px] font-light text-ares-muted">
+            {integration.meta?.note ?? 'OAuth 2.0 · read-only scope'}
+          </span>
+        )}
+        {integration.status === 'platform_managed' && (
+          <span className="text-[10px] font-light text-ares-muted">
+            {integration.meta?.note ??
+              'Included in your plan — no credential needed · refreshes weekly'}
+          </span>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** DataForSEO card — real platform-credentials status + live connectivity test. */
+function DataForSeoCard({
+  integration,
+  notify,
+}: {
+  integration: Integration;
+  notify: (msg: string) => void;
+}) {
+  const test = trpc.settings.testDataForSeoConnection.useMutation({
+    onSuccess: (res) => {
+      if (res.ok) notify(`DataForSEO connected — balance $${res.balance.toFixed(2)}.`);
+    },
+    onError: (err) => notify(err.message || 'DataForSEO connection test failed.'),
+  });
+  const result = test.data;
+
+  return (
+    <>
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ares border border-ares-border bg-ares-surface">
+          <Icon
+            icon={PROVIDER_ICON[integration.provider]}
+            width={20}
+            height={20}
+            className="text-ares-primary"
+          />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-normal text-ares-text">{integration.name}</p>
+          <p className="mt-0.5 text-[11px] font-light leading-[16px] text-ares-muted">
+            {integration.role}
+          </p>
+        </div>
+        {integration.status === 'connected' ? (
+          <span className="badge-pill border-ares-primary/40 text-ares-primary">
+            <Icon icon={icons.checkCircle} width={12} height={12} />
+            Connected
+          </span>
+        ) : (
+          <span className="badge-pill text-ares-muted">Not configured</span>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-ares-border2 pt-3">
+        <span className="text-[10px] font-light text-ares-muted">
+          {integration.meta?.syncNote ?? 'Platform-managed credentials'}
+        </span>
+        <span className="ml-auto">
+          <button
+            className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-link transition-colors duration-200 hover:text-ares-primary"
+            disabled={test.isPending}
+            onClick={() => test.mutate()}
+          >
+            {test.isPending ? 'Testing…' : 'Test connection'}
+          </button>
+        </span>
+      </div>
+
+      {result?.ok && (
+        <p className="mt-2 flex items-center gap-1.5 text-[10px] font-light text-ares-primary">
+          <Icon icon={icons.checkCircle} width={12} height={12} />
+          Connected as {result.login} · balance ${result.balance.toFixed(2)}
+        </p>
+      )}
+      {(result && !result.ok) || test.isError ? (
+        <p className="mt-2 flex items-center gap-1.5 text-[10px] font-light text-ares-primaryDark">
+          <Icon icon={icons.dangerTriangle} width={12} height={12} />
+          {(result && !result.ok && result.error) || test.error?.message || 'Connection failed'}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export default function IntegrationsTab({ notify }: { notify: (msg: string) => void }) {
   const [connecting, setConnecting] = useState<Integration | null>(null);
 
@@ -72,87 +233,28 @@ export default function IntegrationsTab({ notify }: { notify: (msg: string) => v
               transition={{ duration: 0.4, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] }}
               className="action-card p-5"
             >
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ares border border-ares-border bg-ares-surface">
-                  <Icon
-                    icon={PROVIDER_ICON[integration.provider]}
-                    width={20}
-                    height={20}
-                    className="text-ares-primary"
-                  />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-normal text-ares-text">{integration.name}</p>
-                  <p className="mt-0.5 text-[11px] font-light leading-[16px] text-ares-muted">
-                    {integration.role}
-                  </p>
-                </div>
-                {integration.status === 'connected' && (
-                  <span className="badge-pill border-ares-primary/40 text-ares-primary">
-                    <Icon icon={icons.checkCircle} width={12} height={12} />
-                    Connected
-                  </span>
-                )}
-                {integration.status === 'platform_managed' && (
-                  <span className="badge-pill text-ares-muted">Platform-managed</span>
-                )}
-                {integration.status === 'not_connected' && (
-                  <button
-                    className="btn-primary !px-3 !py-1.5 text-[10px]"
-                    onClick={() => setConnecting(integration)}
-                  >
-                    Connect
-                  </button>
-                )}
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-ares-border2 pt-3">
-                {integration.status === 'connected' && (
-                  <>
-                    <span className="text-[10px] font-light text-ares-muted">
-                      {integration.meta?.syncNote ?? 'Sync active'}
-                    </span>
-                    <span className="ml-auto flex gap-3">
-                      <button
-                        className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-link transition-colors duration-200 hover:text-ares-primary"
-                        disabled={setStatus.isPending}
-                        onClick={() => {
-                          notify(`${integration.name} reconnected — sync scheduled.`);
-                          connect(integration.provider);
-                        }}
-                      >
-                        Reconnect
-                      </button>
-                      <button
-                        className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-link transition-colors duration-200 hover:text-ares-primaryDark"
-                        disabled={setStatus.isPending}
-                        onClick={() => {
-                          setStatus.mutate({
-                            provider: integration.provider,
-                            status: 'not_connected',
-                          });
-                          notify(
-                            `${integration.name} disconnected — scores will rely on remaining sources.`
-                          );
-                        }}
-                      >
-                        Disconnect
-                      </button>
-                    </span>
-                  </>
-                )}
-                {integration.status === 'not_connected' && (
-                  <span className="text-[10px] font-light text-ares-muted">
-                    {integration.meta?.note ?? 'OAuth 2.0 · read-only scope'}
-                  </span>
-                )}
-                {integration.status === 'platform_managed' && (
-                  <span className="text-[10px] font-light text-ares-muted">
-                    {integration.meta?.note ??
-                      'Included in your plan — no credential needed · refreshes weekly'}
-                  </span>
-                )}
-              </div>
+              {integration.provider === 'dataforseo' ? (
+                <DataForSeoCard integration={integration} notify={notify} />
+              ) : (
+                <GenericCard
+                  integration={integration}
+                  pending={setStatus.isPending}
+                  onConnect={() => setConnecting(integration)}
+                  onReconnect={() => {
+                    notify(`${integration.name} reconnected — sync scheduled.`);
+                    connect(integration.provider);
+                  }}
+                  onDisconnect={() => {
+                    setStatus.mutate({
+                      provider: integration.provider,
+                      status: 'not_connected',
+                    });
+                    notify(
+                      `${integration.name} disconnected — scores will rely on remaining sources.`
+                    );
+                  }}
+                />
+              )}
             </motion.div>
           ))}
 
