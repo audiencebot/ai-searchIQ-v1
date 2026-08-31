@@ -6,6 +6,17 @@ import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { requireTenant } from "./tenant";
 import { getAccountInfo, isDataForSeoConfigured } from "./services/dataforseo";
+import {
+  GOOGLE_SERVICES,
+  buildAuthUrl,
+  clearGoogleCredentials,
+  googleCredentialsSchema,
+  isGoogleConfigured,
+  isGoogleService,
+  newStateNonce,
+  resolveRedirectUri,
+  signState,
+} from "./services/google";
 
 /**
  * Integration card presentation metadata (settings.md §S2). Status + meta are
@@ -42,6 +53,16 @@ const INTEGRATION_META = {
 
 type Provider = keyof typeof INTEGRATION_META;
 
+const googleServiceSchema = z.enum(GOOGLE_SERVICES);
+
+/** True when the row holds a usable Google token bundle. */
+function hasGoogleCredentials(credentials: unknown): boolean {
+  const parsed = googleCredentialsSchema.safeParse(credentials);
+  return (
+    parsed.success && Boolean(parsed.data.refreshToken || parsed.data.accessToken)
+  );
+}
+
 export const settingsRouter = createRouter({
   /** Integration connection cards (settings.md §S2). */
   integrations: authedQuery.query(async ({ ctx }) => {
@@ -69,6 +90,32 @@ export const settingsRouter = createRouter({
           } as Record<string, string>,
         };
       }
+      // Google services (gsc/ga4/gbp): per-tenant OAuth. `configured` reflects
+      // env client credentials; `connected` reflects a stored token bundle.
+      if (isGoogleService(provider)) {
+        const configured = isGoogleConfigured(provider);
+        const credentials = googleCredentialsSchema.safeParse(row?.credentials ?? null);
+        const connected =
+          row?.status === "connected" && hasGoogleCredentials(row?.credentials);
+        const accountLabel = credentials.success
+          ? credentials.data.accountLabel
+          : undefined;
+        const externalAccountId = row?.externalAccountId ?? null;
+        return {
+          provider,
+          ...INTEGRATION_META[provider],
+          status: connected ? ("connected" as const) : ("not_connected" as const),
+          meta: row?.meta ?? null,
+          google: {
+            configured,
+            connected,
+            accountLabel: accountLabel ?? null,
+            externalAccountId,
+            needsResource: connected && !externalAccountId,
+            connectedAt: row?.connectedAt ?? null,
+          },
+        };
+      }
       return {
         provider,
         ...INTEGRATION_META[provider],
@@ -77,6 +124,79 @@ export const settingsRouter = createRouter({
       };
     });
   }),
+
+  /**
+   * Start the per-tenant Google OAuth flow: returns the consent-screen URL the
+   * browser navigates to. State is an HMAC-signed {tenantId, service, nonce}
+   * so the callback can trust the tenant binding without a session table.
+   */
+  googleAuthUrl: authedQuery
+    .input(z.object({ service: googleServiceSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const { tenantId } = await requireTenant(ctx.user.id);
+      if (!isGoogleConfigured(input.service)) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Google OAuth client for ${input.service} is not configured (env missing).`,
+        });
+      }
+      const origin = new URL(ctx.req.url).origin;
+      const url = buildAuthUrl(
+        input.service,
+        signState({
+          tenantId,
+          service: input.service,
+          nonce: newStateNonce(),
+        }),
+        resolveRedirectUri(origin),
+      );
+      return { url };
+    }),
+
+  /** Disconnect a Google service: clears stored credentials + resource. */
+  disconnectGoogle: authedQuery
+    .input(z.object({ service: googleServiceSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const { tenantId } = await requireTenant(ctx.user.id);
+      await clearGoogleCredentials(tenantId, input.service);
+      return { connected: false as const };
+    }),
+
+  /**
+   * Store the tenant-picked Google resource (GA4 property ID, GSC site URL, or
+   * GBP {account, location} JSON) once OAuth has completed.
+   */
+  setGoogleResource: authedQuery
+    .input(
+      z.object({
+        service: googleServiceSchema,
+        externalAccountId: z.string().min(1).max(255),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { tenantId } = await requireTenant(ctx.user.id);
+      const db = getDb();
+      const row = await db.query.integrations.findFirst({
+        where: and(
+          eq(integrations.tenantId, tenantId),
+          eq(integrations.provider, input.service),
+        ),
+      });
+      if (!row || row.status !== "connected" || !hasGoogleCredentials(row.credentials)) {
+        // NotConnected path: report it as data, never as a thrown 500.
+        return { connected: false as const, externalAccountId: null };
+      }
+      await db
+        .update(integrations)
+        .set({ externalAccountId: input.externalAccountId })
+        .where(
+          and(
+            eq(integrations.tenantId, tenantId),
+            eq(integrations.provider, input.service),
+          ),
+        );
+      return { connected: true as const, externalAccountId: input.externalAccountId };
+    }),
 
   /**
    * DataForSEO connectivity check (settings.md §S2): calls the free

@@ -383,6 +383,13 @@ export const integrations = mysqlTable(
       .default("not_connected")
       .notNull(),
     meta: json("meta").$type<Record<string, string>>(),
+    // Per-tenant OAuth credentials for Google services (gsc/ga4/gbp):
+    // { refreshToken, accessToken, expiryDate, scopes, accountLabel }.
+    credentials: json("credentials").$type<IntegrationCredentials>(),
+    // Tenant-picked resource: GA4 property ID / GSC site URL / GBP
+    // {account, location} JSON.
+    externalAccountId: varchar("externalAccountId", { length: 255 }),
+    connectedAt: timestamp("connectedAt"),
     updatedAt: timestamp("updatedAt")
       .defaultNow()
       .notNull()
@@ -395,6 +402,16 @@ export const integrations = mysqlTable(
     ),
   }),
 );
+
+/** Shape of the per-tenant OAuth token bundle stored in integrations.credentials. */
+export interface IntegrationCredentials {
+  refreshToken?: string;
+  accessToken?: string;
+  /** Epoch ms when the access token expires. */
+  expiryDate?: number;
+  scopes?: string[];
+  accountLabel?: string;
+}
 
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = typeof integrations.$inferInsert;

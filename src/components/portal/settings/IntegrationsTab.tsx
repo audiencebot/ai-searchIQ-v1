@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Icon } from '@iconify/react';
 import type { IconifyIcon } from '@iconify/react';
 import { motion } from 'framer-motion';
@@ -12,6 +13,9 @@ import { LoadingBlock, ErrorBlock } from '@/components/portal/alerts/QueryState'
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 type Integration = RouterOutputs['settings']['integrations'][number];
 type Provider = Integration['provider'];
+type GoogleIntegration = Extract<Integration, { google: unknown }>;
+type GoogleInfo = GoogleIntegration['google'];
+type GoogleService = GoogleIntegration['provider'];
 
 const PROVIDER_ICON: Record<Provider, IconifyIcon> = {
   gbp: icons.mapPoint,
@@ -21,7 +25,185 @@ const PROVIDER_ICON: Record<Provider, IconifyIcon> = {
   lighthouse: icons.shieldCheck,
 };
 
-/** Standard integration card (GBP / GSC / GA4 / Lighthouse — OAuth stubs). */
+const GOOGLE_RESOURCE_HINT: Record<GoogleService, { label: string; placeholder: string }> = {
+  gsc: {
+    label: 'Search Console property',
+    placeholder: 'https://example.com/ or sc-domain:example.com',
+  },
+  ga4: {
+    label: 'GA4 property ID',
+    placeholder: '123456789',
+  },
+  gbp: {
+    label: 'Business Profile location',
+    placeholder: 'accounts/123/locations/456',
+  },
+};
+
+/** GBP stores {account, location} JSON — derive the location for display/input. */
+function googleResourceLabel(service: GoogleService, externalAccountId: string): string {
+  if (service === 'gbp') {
+    try {
+      const parsed = JSON.parse(externalAccountId) as { location?: string };
+      if (parsed.location) return parsed.location;
+    } catch {
+      // fall through — show the raw value
+    }
+  }
+  return externalAccountId;
+}
+
+/** Normalize user input into the stored externalAccountId form. */
+function googleResourceValue(service: GoogleService, raw: string): string {
+  const value = raw.trim();
+  if (service === 'gbp' && !value.startsWith('{')) {
+    // Bare location resource name — account is the path before /locations/.
+    const [account] = value.split('/locations/');
+    return JSON.stringify({ account: account ?? value, location: value });
+  }
+  return value;
+}
+
+/** Google service card (GSC / GA4 / GBP) — real per-tenant OAuth connect flow. */
+function GoogleServiceCard({
+  integration,
+  notify,
+}: {
+  integration: GoogleIntegration;
+  notify: (msg: string) => void;
+}) {
+  const google: GoogleInfo = integration.google;
+  const utils = trpc.useUtils();
+  const [resourceInput, setResourceInput] = useState('');
+
+  const authUrl = trpc.settings.googleAuthUrl.useMutation({
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (err) => notify(err.message || 'Could not start the Google OAuth flow.'),
+  });
+  const disconnect = trpc.settings.disconnectGoogle.useMutation({
+    onSuccess: () => {
+      utils.settings.integrations.invalidate();
+      notify(`${integration.name} disconnected — scores will rely on remaining sources.`);
+    },
+    onError: (err) => notify(err.message || 'Could not disconnect the integration.'),
+  });
+  const setResource = trpc.settings.setGoogleResource.useMutation({
+    onSuccess: (res) => {
+      if (res.connected) {
+        utils.settings.integrations.invalidate();
+        setResourceInput('');
+        notify(`${integration.name} resource saved — sync will use it from now on.`);
+      } else {
+        notify(`Reconnect ${integration.name} before picking a resource.`);
+      }
+    },
+    onError: (err) => notify(err.message || 'Could not save the resource.'),
+  });
+
+  const hint = GOOGLE_RESOURCE_HINT[integration.provider];
+  const resourceLabel = google.externalAccountId
+    ? googleResourceLabel(integration.provider, google.externalAccountId)
+    : null;
+
+  return (
+    <>
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ares border border-ares-border bg-ares-surface">
+          <Icon
+            icon={PROVIDER_ICON[integration.provider]}
+            width={20}
+            height={20}
+            className="text-ares-primary"
+          />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-normal text-ares-text">{integration.name}</p>
+          <p className="mt-0.5 text-[11px] font-light leading-[16px] text-ares-muted">
+            {integration.role}
+          </p>
+        </div>
+        {!google.configured && <span className="badge-pill text-ares-muted">Not configured</span>}
+        {google.configured && !google.connected && (
+          <button
+            className="btn-primary !px-3 !py-1.5 text-[10px]"
+            disabled={authUrl.isPending}
+            onClick={() => authUrl.mutate({ service: integration.provider })}
+          >
+            {authUrl.isPending ? 'Redirecting…' : 'Connect to Google'}
+          </button>
+        )}
+        {google.connected && (
+          <span className="badge-pill border-ares-primary/40 text-ares-primary">
+            <Icon icon={icons.checkCircle} width={12} height={12} />
+            Connected
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-ares-border2 pt-3">
+        {!google.configured && (
+          <span className="text-[10px] font-light text-ares-muted">
+            OAuth client not configured — your platform admin must set the Google client env vars.
+          </span>
+        )}
+        {google.configured && !google.connected && (
+          <span className="text-[10px] font-light text-ares-muted">
+            OAuth 2.0 · read-only scope · you can disconnect at any time
+          </span>
+        )}
+        {google.connected && (
+          <>
+            <span className="text-[10px] font-light text-ares-muted">
+              {google.accountLabel ?? 'Google account authorized'}
+              {resourceLabel ? ` · ${resourceLabel}` : ''}
+            </span>
+            <span className="ml-auto flex gap-3">
+              <button
+                className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-link transition-colors duration-200 hover:text-ares-primaryDark"
+                disabled={disconnect.isPending}
+                onClick={() => disconnect.mutate({ service: integration.provider })}
+              >
+                {disconnect.isPending ? 'Disconnecting…' : 'Disconnect'}
+              </button>
+            </span>
+          </>
+        )}
+      </div>
+
+      {google.connected && google.needsResource && (
+        <div className="mt-3">
+          <p className="text-[10px] font-light uppercase tracking-[0.08em] text-ares-muted">
+            {hint.label}
+          </p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <input
+              value={resourceInput}
+              onChange={(e) => setResourceInput(e.target.value)}
+              placeholder={hint.placeholder}
+              className="w-full rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[12px] font-light text-ares-secondarytext placeholder:text-ares-muted focus:border-ares-primaryDark focus:outline-none"
+            />
+            <button
+              className="btn-primary !px-3 !py-1.5 text-[10px]"
+              disabled={!resourceInput.trim() || setResource.isPending}
+              onClick={() =>
+                setResource.mutate({
+                  service: integration.provider,
+                  externalAccountId: googleResourceValue(integration.provider, resourceInput),
+                })
+              }
+            >
+              {setResource.isPending ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Standard integration card (Lighthouse — platform-managed). */
 function GenericCard({
   integration,
   pending,
@@ -184,6 +366,7 @@ function DataForSeoCard({
 
 export default function IntegrationsTab({ notify }: { notify: (msg: string) => void }) {
   const [connecting, setConnecting] = useState<Integration | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const utils = trpc.useUtils();
   const integrations = trpc.settings.integrations.useQuery();
@@ -197,6 +380,31 @@ export default function IntegrationsTab({ notify }: { notify: (msg: string) => v
     },
     onError: (err) => notify(err.message || 'Could not update the integration.'),
   });
+
+  // OAuth return flash: /app/settings?tab=integrations&connected=<service>.
+  const connectedFlash = searchParams.get('connected');
+  const googleError = searchParams.get('googleError');
+  useEffect(() => {
+    if (!connectedFlash && !googleError) return;
+    if (connectedFlash) {
+      const names: Record<string, string> = {
+        gsc: 'Google Search Console',
+        ga4: 'Google Analytics 4',
+        gbp: 'Google Business Profile',
+      };
+      notify(`${names[connectedFlash] ?? 'Google'} connected — first sync scheduled.`);
+      utils.settings.integrations.invalidate();
+    } else if (googleError === 'access_denied') {
+      notify('Google authorization was cancelled — nothing was connected.');
+    } else {
+      notify('Google connection failed — please try again.');
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('connected');
+    next.delete('googleError');
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectedFlash, googleError]);
 
   const connect = (provider: Provider) =>
     setStatus.mutate({ provider, status: 'connected' });
@@ -235,6 +443,8 @@ export default function IntegrationsTab({ notify }: { notify: (msg: string) => v
             >
               {integration.provider === 'dataforseo' ? (
                 <DataForSeoCard integration={integration} notify={notify} />
+              ) : 'google' in integration ? (
+                <GoogleServiceCard integration={integration} notify={notify} />
               ) : (
                 <GenericCard
                   integration={integration}
@@ -283,7 +493,7 @@ export default function IntegrationsTab({ notify }: { notify: (msg: string) => v
         </motion.div>
       </div>
 
-      {/* OAuth stub modal */}
+      {/* OAuth stub modal (Lighthouse) */}
       <Modal
         open={connecting !== null}
         onClose={() => setConnecting(null)}
