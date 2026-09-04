@@ -447,6 +447,81 @@ export const integrationCache = mysqlTable(
 export type IntegrationCache = typeof integrationCache.$inferSelect;
 export type InsertIntegrationCache = typeof integrationCache.$inferInsert;
 
+// PageSpeed Insights (Lighthouse) audits — one row per run, tenant-scoped.
+// This table pre-existed in the live DB (schema drift); the definition below
+// matches the live columns exactly (introspected via SHOW COLUMNS/INDEX):
+//   id bigint unsigned auto_increment PK
+//   tenantId bigint unsigned NOT NULL FK -> tenants.id, idx lighthouse_audits_tenant_idx
+//   url varchar(512) NOT NULL
+//   strategy enum('mobile','desktop') NOT NULL
+//   scores json NOT NULL           (parsed audit summary — LighthouseAuditSummary)
+//   fetchedAt timestamp NOT NULL   (NO default — always set explicitly on insert)
+//   createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+// The trimmed raw API response is cached separately in integration_cache
+// (provider 'pagespeed', 24h TTL) for cost/quota control.
+export const lighthouseAudits = mysqlTable(
+  "lighthouse_audits",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    url: varchar("url", { length: 512 }).notNull(),
+    strategy: mysqlEnum("strategy", ["mobile", "desktop"]).notNull(),
+    scores: json("scores").$type<LighthouseAuditSummary>().notNull(),
+    fetchedAt: timestamp("fetchedAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("lighthouse_audits_tenant_idx").on(table.tenantId),
+  }),
+);
+
+/** Rating buckets match Lighthouse score bands (0.9 / 0.5 cutoffs). */
+export type LighthouseRating = "good" | "average" | "poor";
+
+export interface LighthouseMetricValue {
+  /** Raw numeric value (ms for timings, unitless for CLS). */
+  value: number;
+  /** Lighthouse display string, e.g. "1.8 s". */
+  displayValue: string;
+  rating: LighthouseRating;
+}
+
+/** Parsed audit summary stored in lighthouse_audits.scores. */
+export interface LighthouseAuditSummary {
+  url: string;
+  strategy: "mobile" | "desktop";
+  /** Category scores normalized to 0–100. */
+  scores: {
+    performance: number;
+    seo: number;
+    accessibility: number;
+    bestPractices: number;
+  };
+  metrics: {
+    firstContentfulPaint: LighthouseMetricValue;
+    largestContentfulPaint: LighthouseMetricValue;
+    totalBlockingTime: LighthouseMetricValue;
+    cumulativeLayoutShift: LighthouseMetricValue;
+    speedIndex: LighthouseMetricValue;
+    /** Present on Lighthouse >= 10 (CrUX-driven); absent on older runs. */
+    interactionToNextPaint?: LighthouseMetricValue;
+  };
+  /** Top 5 perf opportunities by estimated savings. */
+  opportunities: {
+    id: string;
+    title: string;
+    /** Estimated savings display string, e.g. "0.9 s" / "120 KiB". */
+    savings: string;
+  }[];
+  /** ISO timestamp of the API fetch. */
+  fetchedAt: string;
+}
+
+export type LighthouseAudit = typeof lighthouseAudits.$inferSelect;
+export type InsertLighthouseAudit = typeof lighthouseAudits.$inferInsert;
+
 // Monthly reports are stored as assembled snapshots (not derived live) so past
 // months render as frozen archives exactly as delivered — see report.md §S3.
 export const reportMonths = mysqlTable(

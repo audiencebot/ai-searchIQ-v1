@@ -13,6 +13,7 @@ import {
   actions,
   integrations,
   integrationCache,
+  lighthouseAudits,
   reportMonths,
   copilotQa,
 } from "./schema";
@@ -33,6 +34,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   actions: many(actions),
   integrations: many(integrations),
   integrationCache: many(integrationCache),
+  lighthouseAudits: many(lighthouseAudits),
   reportMonths: many(reportMonths),
   copilotQa: many(copilotQa),
 }));
@@ -115,6 +117,13 @@ export const integrationsRelations = relations(integrations, ({ one }) => ({
 export const integrationCacheRelations = relations(integrationCache, ({ one }) => ({
   tenant: one(tenants, {
     fields: [integrationCache.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const lighthouseAuditsRelations = relations(lighthouseAudits, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [lighthouseAudits.tenantId],
     references: [tenants.id],
   }),
 }));

@@ -7,6 +7,11 @@ import { getDb } from "./queries/connection";
 import { requireTenant } from "./tenant";
 import { getAccountInfo, isDataForSeoConfigured } from "./services/dataforseo";
 import {
+  getLatestAudit,
+  isPageSpeedConfigured,
+  runAudit,
+} from "./services/pagespeed";
+import {
   GOOGLE_SERVICES,
   buildAuthUrl,
   clearGoogleCredentials,
@@ -72,6 +77,8 @@ export const settingsRouter = createRouter({
       .from(integrations)
       .where(eq(integrations.tenantId, tenantId));
     const byProvider = new Map(rows.map((r) => [r.provider, r]));
+    // Lighthouse is real: platform key in env + latest tenant audit row.
+    const lastAudit = await getLatestAudit(tenantId);
     return (Object.keys(INTEGRATION_META) as Provider[]).map((provider) => {
       const row = byProvider.get(provider);
       // DataForSEO is real: platform credentials live in env, so its status
@@ -88,6 +95,23 @@ export const settingsRouter = createRouter({
               ? "Platform credentials configured · responses cached 24h for cost control"
               : "Platform credentials not configured",
           } as Record<string, string>,
+        };
+      }
+      // PageSpeed/Lighthouse: platform API key in env; status reflects
+      // configuration, and the card carries the latest tenant audit summary.
+      if (provider === "lighthouse") {
+        const configured = isPageSpeedConfigured();
+        return {
+          provider,
+          ...INTEGRATION_META[provider],
+          status: configured ? "connected" : "not_connected",
+          meta: {
+            ...(row?.meta ?? {}),
+            syncNote: configured
+              ? "Platform API key configured · audits cached 24h"
+              : "Platform API key not configured",
+          } as Record<string, string>,
+          lighthouse: { configured, lastAudit },
         };
       }
       // Google services (gsc/ga4/gbp): per-tenant OAuth. `configured` reflects
@@ -116,9 +140,11 @@ export const settingsRouter = createRouter({
           },
         };
       }
+      // Unreachable today (every provider is handled above) — kept as the
+      // fallback shape if a new provider is added to INTEGRATION_META.
       return {
         provider,
-        ...INTEGRATION_META[provider],
+        ...INTEGRATION_META[provider as Provider],
         status: row?.status ?? "not_connected",
         meta: row?.meta ?? null,
       };
@@ -221,6 +247,45 @@ export const settingsRouter = createRouter({
         error: err instanceof Error ? err.message : "DataForSEO connection failed",
       };
     }
+  }),
+
+  /**
+   * Run a PageSpeed/Lighthouse audit (settings.md §S2). Defaults to the
+   * tenant's primary domain — the brands table carries no domain column, so
+   * the domain comes from tenants.websiteUrl (the primary brand's site).
+   * API failures are returned inline as { ok:false, error }, never thrown.
+   */
+  runLighthouseAudit: authedQuery
+    .input(
+      z
+        .object({
+          url: z.string().trim().min(1).max(512).optional(),
+          strategy: z.enum(["mobile", "desktop"]).default("mobile"),
+        })
+        .optional(),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { tenantId, tenant } = await requireTenant(ctx.user.id);
+      if (!isPageSpeedConfigured()) {
+        return { ok: false as const, error: "PAGESPEED_API_KEY is not configured" };
+      }
+      const rawUrl = input?.url ?? tenant.websiteUrl;
+      const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+      try {
+        const { summary, dataSource } = await runAudit(url, input?.strategy ?? "mobile", tenantId);
+        return { ok: true as const, summary, dataSource };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: err instanceof Error ? err.message : "PageSpeed audit failed",
+        };
+      }
+    }),
+
+  /** Latest tenant-scoped Lighthouse audit summary (null when never run). */
+  lighthouseLatest: authedQuery.query(async ({ ctx }) => {
+    const { tenantId } = await requireTenant(ctx.user.id);
+    return { configured: isPageSpeedConfigured(), lastAudit: await getLatestAudit(tenantId) };
   }),
 
   /** Connect/disconnect stub (settings.md §S2 — demo flips to Connected). */
