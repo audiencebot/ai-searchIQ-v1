@@ -1,5 +1,6 @@
 import { actionPlanRouter } from "./action-plan-router";
 import { alertsRouter } from "./alerts-router";
+import { analyticsRouter } from "./analytics-router";
 import { askRouter } from "./ask-router";
 import { authRouter } from "./auth-router";
 import { bootstrapRouter } from "./bootstrap-router";
@@ -17,6 +18,7 @@ export const appRouter = createRouter({
   bootstrap: bootstrapRouter,
   dashboard: dashboardRouter,
   monitoring: monitoringRouter,
+  analytics: analyticsRouter,
   competitors: competitorsRouter,
   citations: citationsRouter,
   alerts: alertsRouter,

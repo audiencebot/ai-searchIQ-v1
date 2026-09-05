@@ -14,6 +14,7 @@ import {
   integrations,
   integrationCache,
   lighthouseAudits,
+  crawlerVisits,
   reportMonths,
   copilotQa,
 } from "./schema";
@@ -35,6 +36,7 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   integrations: many(integrations),
   integrationCache: many(integrationCache),
   lighthouseAudits: many(lighthouseAudits),
+  crawlerVisits: many(crawlerVisits),
   reportMonths: many(reportMonths),
   copilotQa: many(copilotQa),
 }));
@@ -124,6 +126,13 @@ export const integrationCacheRelations = relations(integrationCache, ({ one }) =
 export const lighthouseAuditsRelations = relations(lighthouseAudits, ({ one }) => ({
   tenant: one(tenants, {
     fields: [lighthouseAudits.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const crawlerVisitsRelations = relations(crawlerVisits, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [crawlerVisits.tenantId],
     references: [tenants.id],
   }),
 }));

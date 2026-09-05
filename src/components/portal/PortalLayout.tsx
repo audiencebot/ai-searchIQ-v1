@@ -24,6 +24,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Monitoring',
     items: [
       { to: '/app/monitoring', label: 'Prompt Monitoring', icon: icons.eye },
+      { to: '/app/ai-channel', label: 'AI Channel', icon: icons.pulse2 },
       { to: '/app/competitors', label: 'Competitors', icon: icons.usersGroupRounded },
       { to: '/app/citations', label: 'Citations & Sources', icon: icons.linkLinear },
       { to: '/app/alerts', label: 'Alerts', icon: icons.dangerTriangle, badge: 3 },
@@ -41,6 +42,7 @@ const NAV_SECTIONS: NavSection[] = [
 const PAGE_TITLES: Record<string, string> = {
   '/app': 'Dashboard',
   '/app/monitoring': 'Prompt Monitoring',
+  '/app/ai-channel': 'AI Channel Analytics',
   '/app/competitors': 'Competitors',
   '/app/citations': 'Citations & Sources',
   '/app/alerts': 'Alerts',

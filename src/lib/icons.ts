@@ -46,6 +46,9 @@ import copyLinear from '@iconify-icons/solar/copy-linear';
 import shareLinear from '@iconify-icons/solar/share-linear';
 import arrowUpLinear from '@iconify-icons/solar/arrow-up-linear';
 import arrowDownLinear from '@iconify-icons/solar/arrow-down-linear';
+import pulse2 from '@iconify-icons/solar/pulse-2-linear';
+import cloudUpload from '@iconify-icons/solar/cloud-upload-linear';
+import serverLinear from '@iconify-icons/solar/database-linear';
 
 export const icons = {
   radar2,
@@ -94,4 +97,7 @@ export const icons = {
   shareLinear,
   arrowUpLinear,
   arrowDownLinear,
+  pulse2,
+  cloudUpload,
+  serverLinear,
 } as const;

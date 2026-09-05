@@ -3,6 +3,7 @@ import {
   mysqlEnum,
   serial,
   bigint,
+  smallint,
   varchar,
   text,
   json,
@@ -48,6 +49,9 @@ export const tenants = mysqlTable("tenants", {
     .default("report"),
   // Enterprise tenants resell under their own brand (portal + reports).
   whiteLabel: boolean("whiteLabel").notNull().default(false),
+  // Per-tenant ingest token for the AI Channel Analytics log-drain endpoint
+  // (POST /api/ingest/crawler-visit). Format: "asiq_" + 32 hex chars.
+  ingestToken: varchar("ingestToken", { length: 64 }),
   // Business profile = misrepresentation ground truth (settings.md §S3).
   profile: json("profile").$type<{
     legalName: string;
@@ -521,6 +525,56 @@ export interface LighthouseAuditSummary {
 
 export type LighthouseAudit = typeof lighthouseAudits.$inferSelect;
 export type InsertLighthouseAudit = typeof lighthouseAudits.$inferInsert;
+
+// AI Channel Analytics (PRD §4.7) — server-side measurement of the AI
+// channel. One row per captured request from a known AI bot or AI-surface
+// referrer, tenant-scoped like every entity. Created in the live DB via a
+// manual CREATE TABLE mirroring lighthouse_audits conventions:
+//   id bigint unsigned auto_increment PK
+//   tenantId bigint unsigned NOT NULL FK -> tenants.id, idx crawler_visits_tenant_idx
+//   botName varchar(128) NULL        (null for referral_visit rows)
+//   botClass enum('training_crawl','citation_fetch','referral_visit') NOT NULL
+//   path varchar(1024) NOT NULL
+//   httpStatus smallint NOT NULL
+//   ip varchar(45) NOT NULL
+//   verified tinyint(1) NOT NULL DEFAULT 0
+//   referer varchar(1024) NULL
+//   visitedAt timestamp NOT NULL     (NO default — always set explicitly)
+//   createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+export const crawlerVisits = mysqlTable(
+  "crawler_visits",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    botName: varchar("botName", { length: 128 }),
+    botClass: mysqlEnum("botClass", [
+      "training_crawl",
+      "citation_fetch",
+      "referral_visit",
+    ]).notNull(),
+    path: varchar("path", { length: 1024 }).notNull(),
+    httpStatus: smallint("httpStatus").notNull(),
+    ip: varchar("ip", { length: 45 }).notNull(),
+    verified: boolean("verified").notNull().default(false),
+    referer: varchar("referer", { length: 1024 }),
+    visitedAt: timestamp("visitedAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("crawler_visits_tenant_idx").on(table.tenantId),
+    tenantTimeIdx: index("crawler_visits_tenant_time_idx").on(
+      table.tenantId,
+      table.visitedAt,
+    ),
+  }),
+);
+
+export type CrawlerVisit = typeof crawlerVisits.$inferSelect;
+export type InsertCrawlerVisit = typeof crawlerVisits.$inferInsert;
+/** Three-signal classification taxonomy (PRD §4.7). */
+export type BotClass = CrawlerVisit["botClass"];
 
 // Monthly reports are stored as assembled snapshots (not derived live) so past
 // months render as frozen archives exactly as delivered — see report.md §S3.

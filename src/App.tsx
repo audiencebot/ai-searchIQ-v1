@@ -9,6 +9,7 @@ import Pricing from '@/pages/Pricing';
 import SampleReport from '@/pages/SampleReport';
 import Dashboard from '@/pages/portal/Dashboard';
 import Monitoring from '@/pages/portal/Monitoring';
+import AiChannel from '@/pages/portal/AiChannel';
 import Competitors from '@/pages/portal/Competitors';
 import Citations from '@/pages/portal/Citations';
 import Alerts from '@/pages/portal/Alerts';
@@ -41,6 +42,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="monitoring" element={<Monitoring />} />
+        <Route path="ai-channel" element={<AiChannel />} />
         <Route path="competitors" element={<Competitors />} />
         <Route path="citations" element={<Citations />} />
         <Route path="alerts" element={<Alerts />} />
