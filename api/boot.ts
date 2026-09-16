@@ -18,6 +18,12 @@ app.get(Paths.oauthCallback, createOAuthCallbackHandler());
 app.get(GOOGLE_CALLBACK_PATH, createGoogleOAuthCallbackHandler());
 // AI Channel Analytics log-drain ingest (token-authed, outside tRPC).
 app.post("/api/ingest/crawler-visit", crawlerVisitIngestHandler);
+// Local dev kit — env-gated dev login. OFF unless DEV_LOGIN_KEY is set.
+// Mounted before tRPC auth and the /api/* 404 catch-all.
+if (process.env.DEV_LOGIN_KEY) {
+  const { createDevLoginHandler } = await import("./dev-login");
+  app.get("/api/dev-login", createDevLoginHandler());
+}
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",

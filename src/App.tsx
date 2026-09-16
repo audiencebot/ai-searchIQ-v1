@@ -4,6 +4,7 @@ import RequireAuth from '@/components/RequireAuth';
 import PortalLayout from '@/components/portal/PortalLayout';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
+import DevLogin from '@/pages/DevLogin';
 import Platform from '@/pages/Platform';
 import Pricing from '@/pages/Pricing';
 import SampleReport from '@/pages/SampleReport';
@@ -28,6 +29,8 @@ export default function App() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/sample-report" element={<SampleReport />} />
         <Route path="/login" element={<Login />} />
+        {/* Local dev kit — env-gated dev login entry (see docs/LOCAL_DEV.md) */}
+        <Route path="/dev-login" element={<DevLogin />} />
       </Route>
 
       {/* Member portal — gated by RequireAuth (useAuth + LOGIN_PATH contract);
