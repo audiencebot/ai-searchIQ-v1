@@ -53,6 +53,9 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 function SidebarContent({ collapsed }: { collapsed: boolean }) {
+  // HQ nav section is visible to staff only (client-management-plan.md §1).
+  const access = trpc.hq.access.useQuery(undefined, { retry: false });
+  const isStaff = access.data?.staff === true;
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
@@ -71,6 +74,29 @@ function SidebarContent({ collapsed }: { collapsed: boolean }) {
 
       {/* Nav sections */}
       <nav className="flex-1 overflow-y-auto py-4">
+        {isStaff && (
+          <div className="mb-5">
+            {!collapsed && <p className="font-label px-5 pb-2 text-white/40">HQ</p>}
+            <ul className="space-y-0.5 px-2">
+              <li>
+                <NavLink
+                  to="/admin"
+                  title={collapsed ? 'HQ admin' : undefined}
+                  className={({ isActive }) =>
+                    cn(
+                      'relative flex items-center gap-3 rounded-ares px-3 py-2 text-[12px] font-light transition-colors duration-150',
+                      collapsed && 'justify-center px-0',
+                      isActive ? 'bg-ares-primary/[0.12] text-white' : 'text-white/55 hover:text-white'
+                    )
+                  }
+                >
+                  <Icon icon={icons.shieldCheck} width={18} height={18} className="shrink-0" />
+                  {!collapsed && <span className="flex-1 truncate">HQ admin</span>}
+                </NavLink>
+              </li>
+            </ul>
+          </div>
+        )}
         {NAV_SECTIONS.map((section) => (
           <div key={section.title} className="mb-5">
             {!collapsed && (

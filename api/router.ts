@@ -6,7 +6,9 @@ import { authRouter } from "./auth-router";
 import { bootstrapRouter } from "./bootstrap-router";
 import { citationsRouter } from "./citations-router";
 import { competitorsRouter } from "./competitors-router";
+import { connectRouter } from "./connect-router";
 import { dashboardRouter } from "./dashboard-router";
+import { hqRouter } from "./hq-router";
 import { monitoringRouter } from "./monitoring-router";
 import { reportRouter } from "./report-router";
 import { settingsRouter } from "./settings-router";
@@ -26,6 +28,8 @@ export const appRouter = createRouter({
   ask: askRouter,
   report: reportRouter,
   settings: settingsRouter,
+  hq: hqRouter,
+  connect: connectRouter,
 });
 
 export type AppRouter = typeof appRouter;

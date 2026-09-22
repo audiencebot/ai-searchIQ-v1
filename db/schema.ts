@@ -52,6 +52,13 @@ export const tenants = mysqlTable("tenants", {
   // Per-tenant ingest token for the AI Channel Analytics log-drain endpoint
   // (POST /api/ingest/crawler-visit). Format: "asiq_" + 32 hex chars.
   ingestToken: varchar("ingestToken", { length: 64 }),
+  // HQ client lifecycle: new clients start 'onboarding' and flip to 'active'
+  // once the first report has been delivered (client-management-plan.md §3).
+  status: mysqlEnum("status", ["onboarding", "active", "paused", "churned"])
+    .notNull()
+    .default("onboarding"),
+  // Manual checkbox: has the $399 initial audit been collected (Stripe later).
+  auditPaid: boolean("auditPaid").notNull().default(false),
   // Business profile = misrepresentation ground truth (settings.md §S3).
   profile: json("profile").$type<{
     legalName: string;
@@ -627,3 +634,140 @@ export const copilotQa = mysqlTable(
 
 export type CopilotQa = typeof copilotQa.$inferSelect;
 export type InsertCopilotQa = typeof copilotQa.$inferInsert;
+
+// ─── HQ — client management & onboarding (client-management-plan.md §3) ─────
+// Created in the live DB via manual CREATE TABLE statements mirroring the
+// lighthouse_audits conventions (bigint unsigned AI PK, tenantId FK + index,
+// timestamp columns, createdAt DEFAULT CURRENT_TIMESTAMP).
+
+// The two-emails requirement, done properly: exactly one primary + at least
+// one backup per tenant at onboarding; a table so a third contact fits later.
+export const clientContacts = mysqlTable(
+  "client_contacts",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    name: varchar("name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    role: mysqlEnum("role", ["primary", "backup"]).notNull().default("primary"),
+    // Report-completed emails go to every contact with notifyReports=true.
+    notifyReports: boolean("notifyReports").notNull().default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("client_contacts_tenant_idx").on(table.tenantId),
+  }),
+);
+
+export type ClientContact = typeof clientContacts.$inferSelect;
+export type InsertClientContact = typeof clientContacts.$inferInsert;
+
+export const onboardingStatusValues = [
+  "new",
+  "invited",
+  "google_connected",
+  "first_scan_done",
+  "report_sent",
+  "active",
+] as const;
+
+// Where each new client stands in the onboarding flow — one row per tenant.
+// inviteToken ("asiq_inv_" + 32 hex) powers the public /connect/<token> page.
+export const onboardingChecklists = mysqlTable(
+  "onboarding_checklists",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    status: mysqlEnum("status", onboardingStatusValues).notNull().default("new"),
+    inviteToken: varchar("inviteToken", { length: 64 }),
+    inviteSentAt: timestamp("inviteSentAt"),
+    googleConnectedAt: timestamp("googleConnectedAt"),
+    firstScanAt: timestamp("firstScanAt"),
+    reportSentAt: timestamp("reportSentAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt")
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    tenantUnique: uniqueIndex("onboarding_checklists_tenant_unique").on(
+      table.tenantId,
+    ),
+    inviteTokenUnique: uniqueIndex("onboarding_checklists_invite_token_unique").on(
+      table.inviteToken,
+    ),
+  }),
+);
+
+export type OnboardingChecklist = typeof onboardingChecklists.$inferSelect;
+export type InsertOnboardingChecklist = typeof onboardingChecklists.$inferInsert;
+
+// Every report we produce, one row each. initial_audit = the $399 one-time;
+// monthly = Growth-plan recurring.
+export const reports = mysqlTable(
+  "reports",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    type: mysqlEnum("type", ["initial_audit", "monthly"]).notNull(),
+    periodLabel: varchar("periodLabel", { length: 64 }).notNull(),
+    status: mysqlEnum("status", ["queued", "running", "complete", "failed"])
+      .notNull()
+      .default("queued"),
+    payload: json("payload").$type<ReportPayload>(),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("reports_tenant_idx").on(table.tenantId),
+  }),
+);
+
+/** Assembled report snapshot (Phase 1: minimal summary of available data). */
+export interface ReportPayload {
+  headlineScore?: number;
+  integrationsConnected?: number;
+  summary?: string;
+  generatedAt?: string;
+}
+
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = typeof reports.$inferInsert;
+
+// Proof every notification went out (or didn't). HQ shows delivery status
+// per email; failed ones get a "Resend" button.
+export const emailLog = mysqlTable(
+  "email_log",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: bigint("tenantId", { mode: "number", unsigned: true })
+      .notNull()
+      .references(() => tenants.id),
+    reportId: bigint("reportId", { mode: "number", unsigned: true }).references(
+      () => reports.id,
+    ),
+    toEmail: varchar("toEmail", { length: 320 }).notNull(),
+    subject: varchar("subject", { length: 500 }).notNull(),
+    status: mysqlEnum("status", ["pending", "sent", "failed"])
+      .notNull()
+      .default("pending"),
+    providerMessageId: varchar("providerMessageId", { length: 255 }),
+    error: text("error"),
+    sentAt: timestamp("sentAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tenantIdx: index("email_log_tenant_idx").on(table.tenantId),
+    reportIdx: index("email_log_report_idx").on(table.reportId),
+  }),
+);
+
+export type EmailLogEntry = typeof emailLog.$inferSelect;
+export type InsertEmailLogEntry = typeof emailLog.$inferInsert;

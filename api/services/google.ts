@@ -117,6 +117,10 @@ const statePayloadSchema = z.object({
   tenantId: z.number().int().positive(),
   service: z.enum(GOOGLE_SERVICES),
   nonce: z.string().min(8),
+  // Present when the flow was started from the public /connect/<token>
+  // onboarding page — the callback returns the client there instead of
+  // Settings → Integrations and flips the onboarding checklist.
+  inviteToken: z.string().max(64).optional(),
 });
 
 export type GoogleOAuthState = z.infer<typeof statePayloadSchema>;

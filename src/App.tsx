@@ -18,6 +18,13 @@ import ActionPlan from '@/pages/portal/ActionPlan';
 import Ask from '@/pages/portal/Ask';
 import Report from '@/pages/portal/Report';
 import Settings from '@/pages/portal/Settings';
+import Connect from '@/pages/Connect';
+import HqLayout from '@/pages/hq/HqLayout';
+import HqDashboard from '@/pages/hq/HqDashboard';
+import HqClients from '@/pages/hq/HqClients';
+import HqClientDetail from '@/pages/hq/HqClientDetail';
+import HqReports from '@/pages/hq/HqReports';
+import HqSettings from '@/pages/hq/HqSettings';
 
 export default function App() {
   return (
@@ -53,6 +60,19 @@ export default function App() {
         <Route path="ask" element={<Ask />} />
         <Route path="report" element={<Report />} />
         <Route path="settings" element={<Settings />} />
+      </Route>
+
+      {/* Public client onboarding — tokenized Google connect (no login) */}
+      <Route path="/connect/:inviteToken" element={<Connect />} />
+
+      {/* HQ admin — staff-only (HqLayout gates via hq.access; non-staff are
+          redirected to /app with no trace). */}
+      <Route path="/admin" element={<HqLayout />}>
+        <Route index element={<HqDashboard />} />
+        <Route path="clients" element={<HqClients />} />
+        <Route path="clients/:tenantId" element={<HqClientDetail />} />
+        <Route path="reports" element={<HqReports />} />
+        <Route path="settings" element={<HqSettings />} />
       </Route>
 
       <Route path="*" element={<Layout404 />} />
