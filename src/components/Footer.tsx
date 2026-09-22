@@ -17,7 +17,7 @@ const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
     title: 'Company',
     links: [
       { label: 'About', to: '/platform' },
-      { label: 'Contact', to: 'mailto:hello@ai-search-iq.io' },
+      { label: 'Contact', to: 'mailto:hello@aisearchiq.net' },
     ],
   },
   {
@@ -54,10 +54,10 @@ export default function Footer() {
               AI Visibility Intelligence for the next era of search.
             </p>
             <a
-              href="mailto:hello@ai-search-iq.io"
+              href="mailto:hello@aisearchiq.net"
               className="mt-4 inline-block text-[12px] font-light text-white/50 transition-colors duration-200 hover:text-ares-primary"
             >
-              hello@ai-search-iq.io
+              hello@aisearchiq.net
             </a>
           </div>
 
@@ -92,7 +92,7 @@ export default function Footer() {
         <div className="section-rule-dark mt-14" />
         <div className="mt-6 flex items-center justify-between text-[11px] font-light text-white/50">
           <span>© 2026 AI Search IQ</span>
-          <span>ai-search-iq.io</span>
+          <span>aisearchiq.net</span>
         </div>
       </div>
     </footer>

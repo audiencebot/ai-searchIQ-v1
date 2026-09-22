@@ -1,4 +1,6 @@
 import type { Context } from "hono";
+import { eq } from "drizzle-orm";
+import { onboardingChecklists } from "@db/schema";
 import {
   fetchAccountLabel,
   gbpAutoResource,
@@ -8,6 +10,7 @@ import {
   saveGoogleCredentials,
   verifyState,
 } from "./services/google";
+import { getDb } from "./queries/connection";
 
 /**
  * GET /api/integrations/google/callback?code&state
@@ -24,19 +27,26 @@ export function createGoogleOAuthCallbackHandler() {
       return `/app/settings?${params.toString()}`;
     };
 
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const payload = state ? verifyState(state) : null;
+    // Invite-carrying flows (public /connect/<token> page) redirect back to
+    // the connect page instead of Settings → Integrations.
+    const successUrl = payload?.inviteToken
+      ? (extra: Record<string, string>) =>
+          `/connect/${payload.inviteToken}?${new URLSearchParams(extra).toString()}`
+      : settingsUrl;
+
     const oauthError = c.req.query("error");
     if (oauthError) {
       // User denied consent, or Google rejected the request.
-      return c.redirect(settingsUrl({ googleError: oauthError }), 302);
+      return c.redirect(successUrl({ googleError: oauthError }), 302);
     }
 
-    const code = c.req.query("code");
-    const state = c.req.query("state");
     if (!code || !state) {
       return c.json({ error: "code and state are required" }, 400);
     }
 
-    const payload = verifyState(state);
     if (!payload || !isGoogleService(payload.service)) {
       return c.json({ error: "Invalid or tampered OAuth state" }, 400);
     }
@@ -73,13 +83,35 @@ export function createGoogleOAuthCallbackHandler() {
       }
 
       await saveGoogleCredentials(tenantId, service, credentials, externalAccountId);
-      return c.redirect(settingsUrl({ connected: service }), 302);
+
+      // First successful connect from the onboarding page flips the
+      // checklist (plan §4 step 4): status → google_connected.
+      if (payload.inviteToken) {
+        const db = getDb();
+        const checklist = await db.query.onboardingChecklists.findFirst({
+          where: eq(onboardingChecklists.inviteToken, payload.inviteToken),
+        });
+        if (
+          checklist &&
+          (checklist.status === "new" || checklist.status === "invited")
+        ) {
+          await db
+            .update(onboardingChecklists)
+            .set({
+              status: "google_connected",
+              googleConnectedAt: new Date(),
+            })
+            .where(eq(onboardingChecklists.id, checklist.id));
+        }
+      }
+
+      return c.redirect(successUrl({ connected: service }), 302);
     } catch (err) {
       console.error(
         `[google-oauth] callback failed for ${service} (tenant ${tenantId}):`,
         err,
       );
-      return c.redirect(settingsUrl({ googleError: "token_exchange_failed" }), 302);
+      return c.redirect(successUrl({ googleError: "token_exchange_failed" }), 302);
     }
   };
 }

@@ -17,6 +17,10 @@ import {
   crawlerVisits,
   reportMonths,
   copilotQa,
+  clientContacts,
+  onboardingChecklists,
+  reports,
+  emailLog,
 } from "./schema";
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -39,6 +43,10 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   crawlerVisits: many(crawlerVisits),
   reportMonths: many(reportMonths),
   copilotQa: many(copilotQa),
+  clientContacts: many(clientContacts),
+  onboardingChecklist: many(onboardingChecklists),
+  reports: many(reports),
+  emailLog: many(emailLog),
 }));
 
 export const tenantMembersRelations = relations(tenantMembers, ({ one }) => ({
@@ -148,5 +156,35 @@ export const copilotQaRelations = relations(copilotQa, ({ one }) => ({
   tenant: one(tenants, {
     fields: [copilotQa.tenantId],
     references: [tenants.id],
+  }),
+}));
+
+export const clientContactsRelations = relations(clientContacts, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [clientContacts.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const onboardingChecklistsRelations = relations(
+  onboardingChecklists,
+  ({ one }) => ({
+    tenant: one(tenants, {
+      fields: [onboardingChecklists.tenantId],
+      references: [tenants.id],
+    }),
+  }),
+);
+
+export const reportsRelations = relations(reports, ({ one, many }) => ({
+  tenant: one(tenants, { fields: [reports.tenantId], references: [tenants.id] }),
+  emails: many(emailLog),
+}));
+
+export const emailLogRelations = relations(emailLog, ({ one }) => ({
+  tenant: one(tenants, { fields: [emailLog.tenantId], references: [tenants.id] }),
+  report: one(reports, {
+    fields: [emailLog.reportId],
+    references: [reports.id],
   }),
 }));

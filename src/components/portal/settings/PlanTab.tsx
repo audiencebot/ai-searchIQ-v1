@@ -46,7 +46,7 @@ const PLAN_CARDS: {
       'Priority support + dedicated onboarding',
       'Custom pricing — talk to us',
     ],
-    cta: { label: 'Talk to us', href: 'mailto:hello@ai-search-iq.io' },
+    cta: { label: 'Talk to us', href: 'mailto:hello@aisearchiq.net' },
   },
 ];
 

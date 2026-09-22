@@ -284,7 +284,7 @@ export default function Pricing() {
             <div className="section-rule mt-6" />
             <Checklist items={ENTERPRISE_FEATURES} staggerFrom={cardsInView} />
             <div className="mt-8 flex-1" />
-            <a href="mailto:hello@ai-search-iq.io" className="btn-secondary w-full">
+            <a href="mailto:hello@aisearchiq.net" className="btn-secondary w-full">
               Talk to us
             </a>
           </div>
@@ -405,7 +405,7 @@ export default function Pricing() {
         <Link to={`${LOGIN_PATH}?intent=report`} className="btn-primary">
           Request the $399 report
         </Link>
-        <a href="mailto:hello@ai-search-iq.io" className="btn-secondary-dark">
+        <a href="mailto:hello@aisearchiq.net" className="btn-secondary-dark">
           Talk to us
         </a>
       </DarkCtaPanel>
