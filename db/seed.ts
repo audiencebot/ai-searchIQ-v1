@@ -14,6 +14,9 @@ import {
   tenantMembers,
   tenants,
   users,
+  crawlerVisits,
+  integrationCache,
+  lighthouseAudits,
 } from "./schema";
 import { eq, like } from "drizzle-orm";
 
@@ -495,6 +498,14 @@ async function seed() {
       await tx.delete(integrations).where(eq(integrations.tenantId, tid));
       await tx.delete(copilotQa).where(eq(copilotQa.tenantId, tid));
       await tx.delete(brands).where(eq(brands.tenantId, tid));
+      // Newer tables with tenant FKs (added after this seed was written)
+      await tx.delete(crawlerVisits).where(eq(crawlerVisits.tenantId, tid));
+      await tx
+        .delete(lighthouseAudits)
+        .where(eq(lighthouseAudits.tenantId, tid));
+      await tx
+        .delete(integrationCache)
+        .where(eq(integrationCache.tenantId, tid));
       await tx.delete(tenantMembers).where(eq(tenantMembers.tenantId, tid));
       await tx.delete(tenants).where(eq(tenants.id, tid));
       console.log("  · cleared previous Northwind Advisory tenant data");
