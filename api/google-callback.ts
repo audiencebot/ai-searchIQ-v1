@@ -11,6 +11,7 @@ import {
   verifyState,
 } from "./services/google";
 import { getDb } from "./queries/connection";
+import { notifyStaffGoogleConnected } from "./services/email";
 
 /**
  * GET /api/integrations/google/callback?code&state
@@ -95,13 +96,19 @@ export function createGoogleOAuthCallbackHandler() {
           checklist &&
           (checklist.status === "new" || checklist.status === "invited")
         ) {
+          // Phase 1.5 charge-before-report gate: after Google connect the
+          // checklist moves straight to `awaiting_payment` — the initial
+          // audit stays blocked until staff marks the $399 as received.
+          // (google_connected remains a valid enum member for pre-1.5 rows.)
           await db
             .update(onboardingChecklists)
             .set({
-              status: "google_connected",
+              status: "awaiting_payment",
               googleConnectedAt: new Date(),
             })
             .where(eq(onboardingChecklists.id, checklist.id));
+          // Best-effort staff ping; never blocks the redirect.
+          await notifyStaffGoogleConnected(checklist.tenantId, { hqOrigin: origin });
         }
       }
 

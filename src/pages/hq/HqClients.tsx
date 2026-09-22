@@ -8,7 +8,12 @@ import PageHeader from '@/components/portal/alerts/PageHeader';
 import Modal from '@/components/portal/alerts/Modal';
 import { LoadingBlock, ErrorBlock } from '@/components/portal/alerts/QueryState';
 import { ToastHost, useToast } from '@/components/portal/alerts/Toast';
-import type { PlanTier } from '@contracts/constants';
+import {
+  BUSINESS_CATEGORIES,
+  BUSINESS_CATEGORY_LABELS,
+  type BusinessCategory,
+  type PlanTier,
+} from '@contracts/constants';
 
 const PLAN_BADGE: Record<PlanTier, string> = {
   report: 'Audit $399',
@@ -19,8 +24,9 @@ const PLAN_BADGE: Record<PlanTier, string> = {
 const CHECKLIST_NEXT_ACTION: Record<string, string> = {
   new: 'Send invite',
   invited: 'Waiting for Google connect',
-  google_connected: 'Run initial audit',
-  first_scan_done: 'Send report',
+  google_connected: 'Collect payment & run audit',
+  awaiting_payment: 'Collect $399 & mark paid',
+  first_scan_done: 'Review & approve report',
   report_sent: 'Confirm activation',
   active: '—',
 };
@@ -42,6 +48,8 @@ interface FormState {
   name: string;
   websiteUrl: string;
   industry: string;
+  businessCategory: BusinessCategory | '';
+  businessDescription: string;
   plan: PlanTier;
   primaryName: string;
   primaryEmail: string;
@@ -53,6 +61,8 @@ const EMPTY_FORM: FormState = {
   name: '',
   websiteUrl: '',
   industry: '',
+  businessCategory: '',
+  businessDescription: '',
   plan: 'report',
   primaryName: '',
   primaryEmail: '',
@@ -97,6 +107,7 @@ export default function HqClients() {
   const toast = useToast();
   const clients = trpc.hq.clients.useQuery();
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<BusinessCategory | ''>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
@@ -124,7 +135,10 @@ export default function HqClients() {
   const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
 
   const filtered = useMemo(() => {
-    const rows = clients.data ?? [];
+    let rows = clients.data ?? [];
+    if (categoryFilter) {
+      rows = rows.filter((r) => r.tenant.businessCategory === categoryFilter);
+    }
     const q = search.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter(
@@ -133,7 +147,7 @@ export default function HqClients() {
         r.tenant.industry.toLowerCase().includes(q) ||
         r.tenant.websiteUrl.toLowerCase().includes(q)
     );
-  }, [clients.data, search]);
+  }, [clients.data, search, categoryFilter]);
 
   const openModal = () => {
     setForm(EMPTY_FORM);
@@ -148,6 +162,10 @@ export default function HqClients() {
       setFormError('Company name, website, and industry are required.');
       return;
     }
+    if (!form.businessCategory) {
+      setFormError('Pick a business category — it is required.');
+      return;
+    }
     if (!form.primaryName.trim() || !form.primaryEmail.trim()) {
       setFormError('A primary contact (name + email) is required.');
       return;
@@ -160,6 +178,8 @@ export default function HqClients() {
       name: form.name,
       websiteUrl: form.websiteUrl,
       industry: form.industry,
+      businessCategory: form.businessCategory,
+      businessDescription: form.businessDescription.trim() || undefined,
       plan: form.plan,
       primaryContact: { name: form.primaryName, email: form.primaryEmail },
       backupContact: { name: form.backupName, email: form.backupEmail },
@@ -171,6 +191,19 @@ export default function HqClients() {
   return (
     <div>
       <PageHeader eyebrow="HQ · Clients" title="Every client, every plan, every status">
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value as BusinessCategory | '')}
+          className="rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[12px] font-light text-ares-secondarytext outline-none focus:border-ares-primary"
+          aria-label="Filter by category"
+        >
+          <option value="">All categories</option>
+          {BUSINESS_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {BUSINESS_CATEGORY_LABELS[c]}
+            </option>
+          ))}
+        </select>
         <div className="relative">
           <Icon
             icon={icons.magnifer}
@@ -199,7 +232,7 @@ export default function HqClients() {
           <table className="w-full min-w-[860px] text-left text-[12px]">
             <thead>
               <tr className="border-b border-ares-border">
-                {['Client', 'Plan', 'Status', 'Google', 'Last report', 'Next action'].map((h) => (
+                {['Client', 'Category', 'Plan', 'Status', 'Google', 'Last report', 'Next action'].map((h) => (
                   <th key={h} className="font-label px-4 py-3 text-ares-muted">
                     {h}
                   </th>
@@ -222,6 +255,16 @@ export default function HqClients() {
                     <p className="text-[10px] font-light text-ares-muted">
                       {row.tenant.industry} · {row.tenant.websiteUrl}
                     </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.tenant.businessCategory ? (
+                      <span className="badge-pill text-ares-secondarytext">
+                        {BUSINESS_CATEGORY_LABELS[row.tenant.businessCategory as BusinessCategory] ??
+                          row.tenant.businessCategory}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-light text-ares-muted">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className="badge-pill text-ares-primaryDark">
@@ -279,7 +322,7 @@ export default function HqClients() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-ares-muted">
+                  <td colSpan={7} className="px-4 py-8 text-center text-ares-muted">
                     No clients match.
                   </td>
                 </tr>
@@ -354,6 +397,36 @@ export default function HqClients() {
               <Field label="Company name" value={form.name} onChange={(v) => set({ name: v })} required placeholder="Acme Corp" />
               <Field label="Website" value={form.websiteUrl} onChange={(v) => set({ websiteUrl: v })} required placeholder="https://acme.com" />
               <Field label="Industry" value={form.industry} onChange={(v) => set({ industry: v })} required placeholder="Professional Services" />
+              <label className="block">
+                <span className="font-label text-ares-muted">
+                  Business category<span className="text-ares-primary"> *</span>
+                </span>
+                <select
+                  value={form.businessCategory}
+                  onChange={(e) => set({ businessCategory: e.target.value as BusinessCategory | '' })}
+                  className="mt-1.5 w-full rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[13px] font-light text-ares-text outline-none transition-colors focus:border-ares-primary"
+                >
+                  <option value="" disabled>
+                    Select a category…
+                  </option>
+                  {BUSINESS_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {BUSINESS_CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="font-label text-ares-muted">Business description (optional)</span>
+                <textarea
+                  value={form.businessDescription}
+                  onChange={(e) => set({ businessDescription: e.target.value })}
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="What the business does, who it serves, where it operates…"
+                  className="mt-1.5 w-full resize-none rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[13px] font-light text-ares-text outline-none transition-colors focus:border-ares-primary"
+                />
+              </label>
             </div>
 
             <div className="space-y-2">

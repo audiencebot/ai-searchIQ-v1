@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -12,11 +12,18 @@ import {
   tenants,
 } from "@db/schema";
 import type { ReportPayload } from "@db/schema";
-import { PLAN_TIERS } from "@contracts/constants";
+import { BUSINESS_CATEGORIES, PLAN_TIERS } from "@contracts/constants";
 import { createRouter, authedQuery, hqProcedure } from "./middleware";
 import { isStaff } from "./staff";
 import { getDb } from "./queries/connection";
-import { emailFrom, isEmailConfigured, inviteEmail, reportReadyEmail, sendEmail } from "./services/email";
+import {
+  emailFrom,
+  isEmailConfigured,
+  inviteEmail,
+  notifyStaffReportInReview,
+  reportReadyEmail,
+  sendEmail,
+} from "./services/email";
 import { findLatestCompleteScan } from "./queries/tenancy";
 import { GOOGLE_SERVICES } from "./services/google";
 
@@ -43,6 +50,9 @@ export const createClientInputSchema = z.object({
   name: z.string().trim().min(1, "Company name is required").max(255),
   websiteUrl: z.string().trim().min(3, "Website is required").max(512),
   industry: z.string().trim().min(1, "Industry is required").max(255),
+  // Phase 1.5 business profile: category required, description optional.
+  businessCategory: z.enum(BUSINESS_CATEGORIES),
+  businessDescription: z.string().trim().max(2000).optional(),
   plan: planSchema,
   primaryContact: contactInput,
   backupContact: contactInput,
@@ -110,7 +120,9 @@ export const hqRouter = createRouter({
     };
     for (const r of statusRows) byStatus[r.status] = r.value;
 
-    // Audits pending kickoff: onboarding tenants with no completed initial audit.
+    // Audits pending kickoff: onboarding tenants with no initial audit beyond
+    // 'queued'/'failed' (Phase 1.5: audits now land in_review → sent, so the
+    // legacy 'complete' check alone would double-count gated reports).
     const [auditsPending] = await db
       .select({ value: count() })
       .from(tenants)
@@ -121,7 +133,8 @@ export const hqRouter = createRouter({
             sql`(
               SELECT r.id FROM reports r
               WHERE r.tenantId = ${tenants.id}
-                AND r.type = 'initial_audit' AND r.status = 'complete'
+                AND r.type = 'initial_audit'
+                AND r.status IN ('in_review', 'approved', 'sent', 'complete')
               LIMIT 1
             )`,
           ),
@@ -301,6 +314,8 @@ export const hqRouter = createRouter({
           name: input.name,
           websiteUrl: input.websiteUrl,
           industry: input.industry,
+          businessCategory: input.businessCategory,
+          businessDescription: input.businessDescription ?? null,
           plan: input.plan,
           status: "onboarding",
           ingestToken,
@@ -336,14 +351,19 @@ export const hqRouter = createRouter({
         name: z.string().trim().min(1).max(255).optional(),
         websiteUrl: z.string().trim().min(3).max(512).optional(),
         industry: z.string().trim().min(1).max(255).optional(),
+        businessCategory: z.enum(BUSINESS_CATEGORIES).optional(),
+        // Empty string clears the description.
+        businessDescription: z.string().trim().max(2000).optional(),
       }),
     )
     .mutation(async ({ input }) => {
       const { tenantId, ...patch } = input;
       await requireTenantRow(tenantId);
-      const set = Object.fromEntries(
+      const set: Record<string, unknown> = Object.fromEntries(
         Object.entries(patch).filter(([, v]) => v !== undefined),
       );
+      // Empty-string description means "clear it".
+      if (set.businessDescription === "") set.businessDescription = null;
       if (Object.keys(set).length > 0) {
         await getDb().update(tenants).set(set).where(eq(tenants.id, tenantId));
       }
@@ -497,8 +517,12 @@ export const hqRouter = createRouter({
     }),
 
   /**
-   * Kick off (plan §4 step 5): run a report, then email every notifyReports
-   * contact. Phase 1 builds a minimal payload summarizing available data.
+   * Kick off (plan §4 step 5, Phase 1.5 gates):
+   *  - Charge-before-report: `initial_audit` requires the $399 to be marked
+   *    paid; `monthly` requires a growth/enterprise plan.
+   *  - Review gate: the generated report lands in `in_review` — the client is
+   *    NOT emailed and completedAt/reportSentAt stay empty until staff
+   *    approves via `approveReport`.
    * TODO(phase-2): wire the real report module once report-router exposes a
    * reusable generation entry point (it currently only reads report_months).
    */
@@ -509,6 +533,20 @@ export const hqRouter = createRouter({
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       const tenant = await requireTenantRow(input.tenantId);
+
+      // Charge-before-report gate (Phase 1.5 §C).
+      if (input.type === "initial_audit" && !tenant.auditPaid) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Client has not been marked paid",
+        });
+      }
+      if (input.type === "monthly" && tenant.plan !== "growth" && tenant.plan !== "enterprise") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Monthly reports require a Growth or Enterprise plan",
+        });
+      }
 
       const [inserted] = await db
         .insert(reports)
@@ -543,12 +581,15 @@ export const hqRouter = createRouter({
           : "No completed scan data yet — this is a baseline kickoff report.",
         generatedAt: new Date().toISOString(),
       };
+      // Review gate: generated → in_review (NOT complete; no client email).
       await db
         .update(reports)
-        .set({ status: "complete", payload, completedAt: new Date() })
+        .set({ status: "in_review", payload })
         .where(eq(reports.id, reportId));
 
-      // Checklist + tenant lifecycle: kickoff completed → active.
+      // Checklist: firstScanAt is set now; reportSentAt only on approve.
+      // A client waiting at `awaiting_payment` (paid + audit kicked) continues
+      // the onboarding flow to first_scan_done; `active` happens at approve.
       const checklist = await db.query.onboardingChecklists.findFirst({
         where: eq(onboardingChecklists.tenantId, input.tenantId),
       });
@@ -557,16 +598,90 @@ export const hqRouter = createRouter({
         await db
           .update(onboardingChecklists)
           .set({
+            status:
+              checklist.status === "awaiting_payment" || checklist.status === "google_connected"
+                ? "first_scan_done"
+                : checklist.status,
+            firstScanAt: checklist.firstScanAt ?? now,
+          })
+          .where(eq(onboardingChecklists.tenantId, input.tenantId));
+      }
+
+      // Staff ping: report is waiting for review (never throws).
+      await notifyStaffReportInReview(input.tenantId, reportId, {
+        hqOrigin: requestOrigin(ctx.req),
+      });
+
+      return {
+        reportId,
+        status: "in_review" as const,
+      };
+    }),
+
+  /**
+   * Report review gate: fetch a report with its payload for the HQ preview
+   * panel (staff previews exactly what would be delivered to the client).
+   */
+  reviewReport: hqProcedure
+    .input(z.object({ reportId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const report = await db.query.reports.findFirst({
+        where: eq(reports.id, input.reportId),
+      });
+      if (!report) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Report not found." });
+      }
+      const tenant = await requireTenantRow(report.tenantId);
+      return { report, tenantName: tenant.name };
+    }),
+
+  /**
+   * Approve & send: flips an in_review/approved report to `sent`, stamps
+   * completedAt + checklist reportSentAt (+ status active), activates the
+   * tenant, and emails every notifyReports contact (plan §5). This is the
+   * ONLY path that delivers a report to the client in the Phase 1.5 flow.
+   */
+  approveReport: hqProcedure
+    .input(z.object({ reportId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const report = await db.query.reports.findFirst({
+        where: eq(reports.id, input.reportId),
+      });
+      if (!report) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Report not found." });
+      }
+      if (report.status !== "in_review" && report.status !== "approved") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Report is ${report.status} — only in_review reports can be approved.`,
+        });
+      }
+      const tenant = await requireTenantRow(report.tenantId);
+      const now = new Date();
+      await db
+        .update(reports)
+        .set({ status: "sent", completedAt: now })
+        .where(eq(reports.id, report.id));
+
+      const checklist = await db.query.onboardingChecklists.findFirst({
+        where: eq(onboardingChecklists.tenantId, report.tenantId),
+      });
+      if (checklist) {
+        await db
+          .update(onboardingChecklists)
+          .set({
             status: "active",
             firstScanAt: checklist.firstScanAt ?? now,
             reportSentAt: now,
           })
-          .where(eq(onboardingChecklists.tenantId, input.tenantId));
+          .where(eq(onboardingChecklists.tenantId, report.tenantId));
       }
       await db
         .update(tenants)
         .set({ status: "active" })
-        .where(eq(tenants.id, input.tenantId));
+        .where(eq(tenants.id, report.tenantId));
 
       // Notify every contact with notifyReports=true (plan §5).
       const contacts = await db
@@ -574,17 +689,17 @@ export const hqRouter = createRouter({
         .from(clientContacts)
         .where(
           and(
-            eq(clientContacts.tenantId, input.tenantId),
+            eq(clientContacts.tenantId, report.tenantId),
             eq(clientContacts.notifyReports, true),
           ),
         );
       const origin = requestOrigin(ctx.req);
       const template = reportReadyEmail({
         clientName: tenant.name,
-        reportType: REPORT_TYPE_LABELS[input.type],
-        periodLabel: periodLabelFor(input.type),
+        reportType: REPORT_TYPE_LABELS[report.type],
+        periodLabel: report.periodLabel,
         portalUrl: `${origin}/app/report`,
-        headlineScore: payload.headlineScore,
+        headlineScore: report.payload?.headlineScore,
       });
       const results = [];
       for (const contact of contacts) {
@@ -593,17 +708,47 @@ export const hqRouter = createRouter({
             to: contact.email,
             subject: template.subject,
             html: template.html,
-            tenantId: input.tenantId,
-            reportId,
+            tenantId: report.tenantId,
+            reportId: report.id,
           }),
         );
       }
       return {
-        reportId,
-        status: "complete" as const,
+        ok: true as const,
+        status: "sent" as const,
         emailed: results.filter((r) => r.ok).length,
         emailAttempts: results.length,
       };
+    }),
+
+  /** Schedule/reschedule the results walkthrough for a report (Phase 1.5). */
+  scheduleWalkthrough: hqProcedure
+    .input(
+      z.object({
+        reportId: z.number().int().positive(),
+        walkthroughAt: z.coerce.date().nullable(),
+        walkthroughNotes: z.string().trim().max(2000).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const report = await db.query.reports.findFirst({
+        where: eq(reports.id, input.reportId),
+      });
+      if (!report) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Report not found." });
+      }
+      await db
+        .update(reports)
+        .set({
+          walkthroughAt: input.walkthroughAt,
+          walkthroughNotes:
+            input.walkthroughNotes === undefined || input.walkthroughNotes === ""
+              ? null
+              : input.walkthroughNotes,
+        })
+        .where(eq(reports.id, input.reportId));
+      return { ok: true as const };
     }),
 
   /**
@@ -692,6 +837,188 @@ export const hqRouter = createRouter({
       .innerJoin(tenants, eq(reports.tenantId, tenants.id))
       .orderBy(desc(reports.createdAt))
       .limit(200);
+  }),
+
+  /**
+   * HQ Costs screen (Phase 1.5 §B): per-tenant revenue vs DataForSEO spend.
+   *
+   * Revenue logic (intentionally simple until Stripe lands):
+   *  - growth      → $1,000 flat (monthly plan price)
+   *  - enterprise  → $1,000 placeholder; flagged `revenueNote: "custom"`
+   *  - report      → $399 one-time, counted only when auditPaid AND the
+   *                  tenant was created inside the selected range (an "all
+   *                  time" range counts every paid audit).
+   * Cost = SUM of billed DataForSEO task costs cached in integration_cache
+   * payload meta, filtered to the range by fetchedAt. Email count = email_log
+   * rows in range. profit = revenue − costTotal.
+   */
+  costs: hqProcedure
+    .input(
+      z
+        .object({
+          from: z.coerce.date().optional(),
+          to: z.coerce.date().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const from = input?.from;
+      const to = input?.to;
+      const rangeConds = [];
+      if (from) rangeConds.push(gte(integrationCache.fetchedAt, from));
+      if (to) rangeConds.push(lte(integrationCache.fetchedAt, to));
+      const emailRangeConds = [];
+      if (from) emailRangeConds.push(gte(emailLog.createdAt, from));
+      if (to) emailRangeConds.push(lte(emailLog.createdAt, to));
+
+      const [allTenants, spendRows, emailRows] = await Promise.all([
+        db.select().from(tenants).orderBy(desc(tenants.createdAt)),
+        db
+          .select({
+            tenantId: integrationCache.tenantId,
+            value: sql<number | null>`SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(payload, '$.meta.cost')) AS DECIMAL(12,4)))`,
+          })
+          .from(integrationCache)
+          .where(
+            and(
+              eq(integrationCache.provider, "dataforseo"),
+              ...(rangeConds.length ? rangeConds : []),
+            ),
+          )
+          .groupBy(integrationCache.tenantId),
+        db
+          .select({ tenantId: emailLog.tenantId, value: count() })
+          .from(emailLog)
+          .where(emailRangeConds.length ? and(...emailRangeConds) : undefined)
+          .groupBy(emailLog.tenantId),
+      ]);
+
+      const spendBy = new Map(spendRows.map((r) => [r.tenantId, Number(r.value ?? 0)]));
+      const emailsBy = new Map(emailRows.map((r) => [r.tenantId, r.value]));
+      const inRange = (d: Date) => (!from || d >= from) && (!to || d <= to);
+
+      return allTenants.map((t) => {
+        let monthlyRevenue = 0;
+        let revenueNote: string | null = null;
+        if (t.plan === "growth") {
+          monthlyRevenue = 1000;
+        } else if (t.plan === "enterprise") {
+          monthlyRevenue = 1000; // placeholder — real pricing is custom
+          revenueNote = "custom";
+        } else if (t.auditPaid && inRange(t.createdAt)) {
+          monthlyRevenue = 399; // one-time audit fee, counted in its signup range
+        }
+        const costTotal = spendBy.get(t.id) ?? 0;
+        return {
+          tenantId: t.id,
+          name: t.name,
+          plan: t.plan,
+          status: t.status,
+          auditPaid: t.auditPaid,
+          createdAt: t.createdAt,
+          monthlyRevenue,
+          revenueNote,
+          dataForSeoSpend: costTotal,
+          emailCount: emailsBy.get(t.id) ?? 0,
+          costTotal,
+          profit: monthlyRevenue - costTotal,
+        };
+      });
+    }),
+
+  /**
+   * In-HQ actionable notifications (Phase 1.5 §C/D): clients awaiting
+   * payment, reports waiting for review, and failed emails — surfaced in the
+   * HqLayout bell dropdown.
+   */
+  notifications: hqProcedure.query(async () => {
+    const db = getDb();
+    const [paymentRows, reviewRows, failedEmailRows] = await Promise.all([
+      db
+        .select({ tenantId: tenants.id, name: tenants.name, at: onboardingChecklists.updatedAt })
+        .from(onboardingChecklists)
+        .innerJoin(tenants, eq(onboardingChecklists.tenantId, tenants.id))
+        .where(eq(onboardingChecklists.status, "awaiting_payment")),
+      db
+        .select({
+          reportId: reports.id,
+          tenantId: tenants.id,
+          name: tenants.name,
+          periodLabel: reports.periodLabel,
+          at: reports.createdAt,
+        })
+        .from(reports)
+        .innerJoin(tenants, eq(reports.tenantId, tenants.id))
+        .where(eq(reports.status, "in_review")),
+      db
+        .select({
+          emailLogId: emailLog.id,
+          tenantId: tenants.id,
+          name: tenants.name,
+          subject: emailLog.subject,
+          at: emailLog.createdAt,
+        })
+        .from(emailLog)
+        .innerJoin(tenants, eq(emailLog.tenantId, tenants.id))
+        .where(eq(emailLog.status, "failed"))
+        .orderBy(desc(emailLog.createdAt))
+        .limit(20),
+    ]);
+
+    const items = [
+      ...paymentRows.map((r) => ({
+        kind: "awaiting_payment" as const,
+        tenantId: r.tenantId,
+        tenantName: r.name,
+        label: `${r.name} connected Google — mark paid to unlock the audit`,
+        at: r.at,
+      })),
+      ...reviewRows.map((r) => ({
+        kind: "in_review" as const,
+        tenantId: r.tenantId,
+        reportId: r.reportId,
+        tenantName: r.name,
+        label: `Report ready for review — ${r.name} (${r.periodLabel})`,
+        at: r.at,
+      })),
+      ...failedEmailRows.map((r) => ({
+        kind: "failed_email" as const,
+        tenantId: r.tenantId,
+        emailLogId: r.emailLogId,
+        tenantName: r.name,
+        label: `Email failed — ${r.name}: ${r.subject}`,
+        at: r.at,
+      })),
+    ];
+    items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    return items.slice(0, 50);
+  }),
+
+  /** Upcoming walkthroughs (next 14 days) for the HQ dashboard card. */
+  upcomingWalkthroughs: hqProcedure.query(async () => {
+    const db = getDb();
+    const now = new Date();
+    const horizon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    return db
+      .select({
+        reportId: reports.id,
+        tenantId: tenants.id,
+        tenantName: tenants.name,
+        periodLabel: reports.periodLabel,
+        walkthroughAt: reports.walkthroughAt,
+        walkthroughNotes: reports.walkthroughNotes,
+      })
+      .from(reports)
+      .innerJoin(tenants, eq(reports.tenantId, tenants.id))
+      .where(
+        and(
+          gte(reports.walkthroughAt, now),
+          lte(reports.walkthroughAt, horizon),
+        ),
+      )
+      .orderBy(reports.walkthroughAt)
+      .limit(20);
   }),
 
   /** HQ Settings: email provider status (env-only, no secrets). */

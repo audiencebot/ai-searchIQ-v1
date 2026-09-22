@@ -59,6 +59,10 @@ export const tenants = mysqlTable("tenants", {
     .default("onboarding"),
   // Manual checkbox: has the $399 initial audit been collected (Stripe later).
   auditPaid: boolean("auditPaid").notNull().default(false),
+  // HQ business profile (Phase 1.5): coarse category + free-text description
+  // captured at client intake; values from BUSINESS_CATEGORIES in contracts.
+  businessCategory: varchar("businessCategory", { length: 64 }),
+  businessDescription: text("businessDescription"),
   // Business profile = misrepresentation ground truth (settings.md §S3).
   profile: json("profile").$type<{
     legalName: string;
@@ -668,6 +672,9 @@ export const onboardingStatusValues = [
   "new",
   "invited",
   "google_connected",
+  // Phase 1.5: after Google connect the client owes the $399 audit fee
+  // before the initial audit may run (charge-before-report gate).
+  "awaiting_payment",
   "first_scan_done",
   "report_sent",
   "active",
@@ -708,7 +715,19 @@ export type OnboardingChecklist = typeof onboardingChecklists.$inferSelect;
 export type InsertOnboardingChecklist = typeof onboardingChecklists.$inferInsert;
 
 // Every report we produce, one row each. initial_audit = the $399 one-time;
-// monthly = Growth-plan recurring.
+// monthly = Growth-plan recurring. Phase 1.5 review gate: triggerReport lands
+// in 'in_review' (staff preview) and only 'sent' reports are emailed to the
+// client. Legacy 'complete' rows predate the gate and mean "delivered".
+export const REPORT_STATUS_VALUES = [
+  "queued",
+  "running",
+  "in_review",
+  "approved",
+  "sent",
+  "complete",
+  "failed",
+] as const;
+
 export const reports = mysqlTable(
   "reports",
   {
@@ -718,11 +737,14 @@ export const reports = mysqlTable(
       .references(() => tenants.id),
     type: mysqlEnum("type", ["initial_audit", "monthly"]).notNull(),
     periodLabel: varchar("periodLabel", { length: 64 }).notNull(),
-    status: mysqlEnum("status", ["queued", "running", "complete", "failed"])
+    status: mysqlEnum("status", REPORT_STATUS_VALUES)
       .notNull()
       .default("queued"),
     payload: json("payload").$type<ReportPayload>(),
     completedAt: timestamp("completedAt"),
+    // Scheduled results walkthrough with the client (Phase 1.5).
+    walkthroughAt: timestamp("walkthroughAt"),
+    walkthroughNotes: text("walkthroughNotes"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({

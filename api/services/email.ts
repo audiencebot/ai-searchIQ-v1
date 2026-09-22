@@ -1,5 +1,7 @@
-import { emailLog } from "@db/schema";
+import { emailLog, tenants } from "@db/schema";
 import type { EmailLogEntry } from "@db/schema";
+import { eq } from "drizzle-orm";
+import { PLAN_LABELS, type PlanTier } from "@contracts/constants";
 import { getDb } from "../queries/connection";
 
 /**
@@ -34,6 +36,11 @@ export function isEmailConfigured(): boolean {
 /** Sender identity (env-overridable; never a secret). */
 export function emailFrom(): string {
   return process.env.EMAIL_FROM || DEFAULT_FROM;
+}
+
+/** Staff notification inbox (Phase 1.5) — payment & review alerts. */
+export function staffNotifyEmail(): string {
+  return process.env.STAFF_NOTIFY_EMAIL || "hello@aisearchiq.net";
 }
 
 // ─── sendEmail ───────────────────────────────────────────────────────────────
@@ -227,4 +234,108 @@ export function reportReadyEmail(args: {
     subject: `${args.clientName} — your ${args.reportType} (${args.periodLabel}) is ready`,
     html,
   };
+}
+
+// ─── Staff notifications (Phase 1.5) ─────────────────────────────────────────
+// Internal alerts to the OWNER notification address. Like sendEmail, these
+// NEVER throw — a failed staff ping must never block the onboarding flow.
+
+/** Internal staff alert template (client name, plan, action line, HQ link). */
+function staffAlertEmail(args: {
+  headline: string;
+  lines: string[];
+  action: string;
+  hqUrl: string;
+}): { html: string } {
+  const html = shell(`
+    <h1 style="color:${NAVY};font-size:18px;font-weight:600;margin:0 0 14px;">${args.headline}</h1>
+    ${args.lines
+      .map(
+        (l) =>
+          `<p style="color:${INK};font-size:14px;line-height:1.7;margin:0 0 10px;">${l}</p>`,
+      )
+      .join("")}
+    <p style="color:${NAVY_2};font-size:13px;line-height:1.6;margin:6px 0 14px;">
+      <strong>Next step:</strong> ${args.action}
+    </p>
+    ${button(args.hqUrl, "Open in HQ")}
+  `);
+  return { html };
+}
+
+/**
+ * Fired when a client's first Google connect flips the checklist to
+ * awaiting_payment: ping staff so the $399 can be collected and the client
+ * marked paid in HQ (charge-before-report gate).
+ */
+export async function notifyStaffGoogleConnected(
+  tenantId: number,
+  opts: { hqOrigin?: string } = {},
+): Promise<{ ok: boolean }> {
+  try {
+    const db = getDb();
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, tenantId),
+    });
+    if (!tenant) return { ok: false };
+    const planLabel = PLAN_LABELS[(tenant.plan as PlanTier)] ?? tenant.plan;
+    const hqUrl = `${opts.hqOrigin ?? ""}/admin/clients/${tenantId}`;
+    const { html } = staffAlertEmail({
+      headline: `Client connected Google — awaiting payment`,
+      lines: [
+        `<strong>${tenant.name}</strong> just connected their Google services.`,
+        `Plan: <strong>${planLabel}</strong> · Website: ${tenant.websiteUrl}`,
+      ],
+      action: `Mark as paid in HQ once the $399 initial audit fee is received — the initial audit is gated until then.`,
+      hqUrl,
+    });
+    const result = await sendEmail({
+      to: staffNotifyEmail(),
+      subject: "Client connected Google — awaiting payment",
+      html,
+      tenantId,
+    });
+    return { ok: result.ok };
+  } catch (err) {
+    console.error("[email] notifyStaffGoogleConnected failed:", err);
+    return { ok: false };
+  }
+}
+
+/**
+ * Fired when a generated report lands in `in_review`: staff must preview and
+ * approve it before the client is emailed (report review gate).
+ */
+export async function notifyStaffReportInReview(
+  tenantId: number,
+  reportId: number,
+  opts: { hqOrigin?: string } = {},
+): Promise<{ ok: boolean }> {
+  try {
+    const db = getDb();
+    const tenant = await db.query.tenants.findFirst({
+      where: eq(tenants.id, tenantId),
+    });
+    if (!tenant) return { ok: false };
+    const hqUrl = `${opts.hqOrigin ?? ""}/admin/clients/${tenantId}`;
+    const { html } = staffAlertEmail({
+      headline: `Report ready for review — ${tenant.name}`,
+      lines: [
+        `Report #${reportId} for <strong>${tenant.name}</strong> has been generated and is waiting for staff review.`,
+      ],
+      action: `Preview the report in HQ, then Approve &amp; send (emails the client) or Hold.`,
+      hqUrl,
+    });
+    const result = await sendEmail({
+      to: staffNotifyEmail(),
+      subject: `Report ready for review — ${tenant.name}`,
+      html,
+      tenantId,
+      reportId,
+    });
+    return { ok: result.ok };
+  } catch (err) {
+    console.error("[email] notifyStaffReportInReview failed:", err);
+    return { ok: false };
+  }
 }

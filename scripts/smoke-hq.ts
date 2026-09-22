@@ -39,6 +39,8 @@ const VALID = {
   name: "HQ Smoke Test",
   websiteUrl: "https://smoke.example.com",
   industry: "Testing",
+  // Phase 1.5: business category is required on intake.
+  businessCategory: "other" as const,
   plan: "report" as const,
   primaryContact: { name: "Pat Primary", email: "pat@example.com" },
   backupContact: { name: "Bob Backup", email: "bob@example.com" },
@@ -121,13 +123,17 @@ async function main() {
       detailAfterInvite.checklist.inviteSentAt !== null,
   );
 
-  console.log("== 4. triggerReport live ==");
+  console.log("== 4. triggerReport live (Phase 1.5: pay → generate → review → approve) ==");
+  // Charge-before-report gate: the audit requires auditPaid first.
+  await caller.hq.setAuditPaid({ tenantId: created.tenantId, paid: true });
   const report = await caller.hq.triggerReport({
     tenantId: created.tenantId,
     type: "initial_audit",
   });
-  expect("report completed", report.status === "complete");
-  expect("two email attempts logged for the report", report.emailAttempts === 2);
+  expect("report lands in_review (not complete)", report.status === "in_review");
+  const approved = await caller.hq.approveReport({ reportId: report.reportId });
+  expect("approval sends the report", approved.status === "sent");
+  expect("two email attempts logged for the report", approved.emailAttempts === 2);
   const detailAfterReport = await caller.hq.clientDetail({ tenantId: created.tenantId });
   expect(
     "checklist active + timestamps set",

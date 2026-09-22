@@ -49,6 +49,7 @@ import arrowDownLinear from '@iconify-icons/solar/arrow-down-linear';
 import pulse2 from '@iconify-icons/solar/pulse-2-linear';
 import cloudUpload from '@iconify-icons/solar/cloud-upload-linear';
 import serverLinear from '@iconify-icons/solar/database-linear';
+import walletLinear from '@iconify-icons/solar/wallet-linear';
 
 export const icons = {
   radar2,
@@ -100,4 +101,5 @@ export const icons = {
   pulse2,
   cloudUpload,
   serverLinear,
+  walletLinear,
 } as const;

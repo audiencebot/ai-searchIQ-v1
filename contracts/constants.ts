@@ -31,3 +31,30 @@ export const PLAN_DESCRIPTIONS: Record<PlanTier, string> = {
   growth: "$1,000/month per tenant · unlimited seats",
   enterprise: "White-label for businesses & agencies · custom pricing",
 } as const;
+
+/**
+ * HQ business profile categories (tenants.businessCategory, Phase 1.5).
+ * Required on client intake; drives review language and benchmarking later.
+ */
+export const BUSINESS_CATEGORIES = [
+  "legal",
+  "accounting",
+  "consulting",
+  "financial_advisory",
+  "medical_dental",
+  "real_estate",
+  "marketing_agency",
+  "other",
+] as const;
+export type BusinessCategory = (typeof BUSINESS_CATEGORIES)[number];
+
+export const BUSINESS_CATEGORY_LABELS: Record<BusinessCategory, string> = {
+  legal: "Legal",
+  accounting: "Accounting",
+  consulting: "Consulting",
+  financial_advisory: "Financial Advisory",
+  medical_dental: "Medical / Dental",
+  real_estate: "Real Estate",
+  marketing_agency: "Marketing Agency",
+  other: "Other",
+} as const;

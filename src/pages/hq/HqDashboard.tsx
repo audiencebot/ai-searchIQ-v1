@@ -31,6 +31,7 @@ function KpiCard({
 
 export default function HqDashboard() {
   const overview = trpc.hq.overview.useQuery();
+  const walkthroughs = trpc.hq.upcomingWalkthroughs.useQuery();
 
   if (overview.isLoading) return <LoadingBlock rows={5} />;
   if (overview.error || !overview.data) {
@@ -94,6 +95,52 @@ export default function HqDashboard() {
             </Link>
           )}
         </div>
+      </div>
+
+      {/* Upcoming walkthroughs (Phase 1.5) — next 14 days */}
+      <div className="mt-6 rounded-ares border border-ares-border bg-ares-card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-display text-[15px]">Upcoming walkthroughs</h3>
+          <Icon icon={icons.calendar} width={18} height={18} className="text-ares-primary" />
+        </div>
+        {walkthroughs.isLoading && <LoadingBlock rows={2} />}
+        {walkthroughs.data && walkthroughs.data.length === 0 && (
+          <p className="text-[12px] font-light text-ares-muted">
+            No walkthroughs scheduled in the next 14 days — schedule one from a client's report row.
+          </p>
+        )}
+        {walkthroughs.data && walkthroughs.data.length > 0 && (
+          <ul className="space-y-2">
+            {walkthroughs.data.map((w) => (
+              <li
+                key={w.reportId}
+                className="flex items-center gap-3 rounded-ares border border-ares-border/60 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={`/admin/clients/${w.tenantId}`}
+                    className="text-[12px] font-normal text-ares-text hover:text-ares-primary"
+                  >
+                    {w.tenantName}
+                  </Link>
+                  <p className="truncate text-[10px] font-light text-ares-muted">
+                    {w.periodLabel}
+                    {w.walkthroughNotes ? ` · ${w.walkthroughNotes}` : ''}
+                  </p>
+                </div>
+                <span className="shrink-0 text-[11px] font-light text-ares-secondarytext">
+                  {w.walkthroughAt &&
+                    new Date(w.walkthroughAt).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

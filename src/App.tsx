@@ -24,6 +24,7 @@ import HqDashboard from '@/pages/hq/HqDashboard';
 import HqClients from '@/pages/hq/HqClients';
 import HqClientDetail from '@/pages/hq/HqClientDetail';
 import HqReports from '@/pages/hq/HqReports';
+import HqCosts from '@/pages/hq/HqCosts';
 import HqSettings from '@/pages/hq/HqSettings';
 
 export default function App() {
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="clients" element={<HqClients />} />
         <Route path="clients/:tenantId" element={<HqClientDetail />} />
         <Route path="reports" element={<HqReports />} />
+        <Route path="costs" element={<HqCosts />} />
         <Route path="settings" element={<HqSettings />} />
       </Route>
 

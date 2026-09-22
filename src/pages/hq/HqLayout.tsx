@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: icons.chart2, end: true },
   { to: '/admin/clients', label: 'Clients', icon: icons.usersGroupRounded },
   { to: '/admin/reports', label: 'Reports', icon: icons.documentText },
+  { to: '/admin/costs', label: 'Costs', icon: icons.walletLinear },
   { to: '/admin/settings', label: 'Settings', icon: icons.settings },
 ];
 
@@ -21,6 +22,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin': 'HQ Dashboard',
   '/admin/clients': 'Clients',
   '/admin/reports': 'Reports & Email',
+  '/admin/costs': 'Costs',
   '/admin/settings': 'HQ Settings',
 };
 
@@ -38,8 +40,17 @@ export default function HqLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
 
   const isStaff = access.data?.staff === true;
+
+  // Phase 1.5: actionable in-HQ notifications (awaiting payment, reports in
+  // review, failed emails) behind the header bell.
+  const notifications = trpc.hq.notifications.useQuery(undefined, {
+    enabled: isStaff,
+    refetchInterval: 30_000,
+  });
+  const notifCount = notifications.data?.length ?? 0;
   const loading = authLoading || (Boolean(user) && access.isLoading);
 
   useEffect(() => {
@@ -170,6 +181,58 @@ export default function HqLayout() {
             <span className="badge-pill hidden text-ares-muted md:inline-flex">HQ · staff only</span>
           </div>
           <div className="flex items-center gap-3">
+            {/* Notifications bell (Phase 1.5) */}
+            <div className="relative">
+              <button
+                className="relative flex h-9 w-9 items-center justify-center rounded-ares text-ares-secondarytext transition-colors hover:text-ares-primary"
+                aria-label={`Notifications (${notifCount})`}
+                onClick={() => setBellOpen((v) => !v)}
+              >
+                <Icon icon={icons.bell} width={18} height={18} />
+                {notifCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ares-primary px-1 text-[9px] font-normal text-white">
+                    {notifCount > 99 ? '99+' : notifCount}
+                  </span>
+                )}
+              </button>
+              {bellOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setBellOpen(false)} />
+                  <div className="absolute right-0 z-50 mt-2 w-80 rounded-ares border border-ares-border bg-ares-surface shadow-paper">
+                    <p className="font-label border-b border-ares-border px-4 py-3 text-ares-muted">
+                      Needs attention
+                    </p>
+                    <ul className="max-h-80 overflow-y-auto">
+                      {(notifications.data ?? []).map((n, i) => (
+                        <li key={`${n.kind}-${i}`} className="border-b border-ares-border/50 last:border-0">
+                          <Link
+                            to={`/admin/clients/${n.tenantId}`}
+                            onClick={() => setBellOpen(false)}
+                            className="block px-4 py-2.5 transition-colors hover:bg-ares-pageBg"
+                          >
+                            <span className="badge-pill text-ares-primaryDark">
+                              {n.kind === 'awaiting_payment'
+                                ? 'Payment'
+                                : n.kind === 'in_review'
+                                  ? 'Review'
+                                  : 'Email failed'}
+                            </span>
+                            <span className="mt-1 block text-[11px] font-light leading-snug text-ares-secondarytext">
+                              {n.label}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                      {notifCount === 0 && (
+                        <li className="px-4 py-6 text-center text-[11px] font-light text-ares-muted">
+                          Nothing needs attention right now.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ares-tertiary text-[10px] font-normal tracking-[0.05em] text-white">
               {(user.name ?? 'S').slice(0, 2).toUpperCase()}
             </span>

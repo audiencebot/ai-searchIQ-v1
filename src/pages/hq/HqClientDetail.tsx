@@ -8,7 +8,8 @@ import PageHeader from '@/components/portal/alerts/PageHeader';
 import Modal from '@/components/portal/alerts/Modal';
 import { LoadingBlock, ErrorBlock } from '@/components/portal/alerts/QueryState';
 import { ToastHost, useToast } from '@/components/portal/alerts/Toast';
-import { PLAN_LABELS, type PlanTier } from '@contracts/constants';
+import { BUSINESS_CATEGORY_LABELS, PLAN_LABELS, type BusinessCategory, type PlanTier } from '@contracts/constants';
+import ReportReviewModal from '@/components/hq/ReportReviewModal';
 
 const GOOGLE_SERVICES = [
   { key: 'gsc', name: 'Search Console' },
@@ -16,16 +17,31 @@ const GOOGLE_SERVICES = [
   { key: 'gbp', name: 'Business Profile' },
 ] as const;
 
-/** The 5 onboarding steps shown as a timeline (plan §4). */
+/** Onboarding steps shown as a timeline (plan §4 + Phase 1.5 payment gate). */
 const CHECKLIST_STEPS = [
   { key: 'invited', label: 'Invite sent', at: 'inviteSentAt' },
   { key: 'google_connected', label: 'Google connected', at: 'googleConnectedAt' },
+  { key: 'awaiting_payment', label: 'Payment received', at: null },
   { key: 'first_scan_done', label: 'First scan done', at: 'firstScanAt' },
   { key: 'report_sent', label: 'Report sent', at: 'reportSentAt' },
   { key: 'active', label: 'Active', at: null },
 ] as const;
 
-const STEP_ORDER = ['new', 'invited', 'google_connected', 'first_scan_done', 'report_sent', 'active'];
+// Timeline position is derived from CHECKLIST_STEPS directly ('new' = before
+// step 0), so 'awaiting_payment' shows "Payment received" as the CURRENT
+// step, not a done one.
+
+
+/** Report status badge styling (Phase 1.5 review gate adds in_review/sent). */
+const REPORT_STATUS_STYLES: Record<string, string> = {
+  in_review: 'border-ares-primary/50 bg-ares-primary/10 text-ares-primaryDark',
+  approved: 'border-ares-primary/50 bg-ares-primary/10 text-ares-primaryDark',
+  sent: 'text-ares-primaryDark',
+  complete: 'text-ares-primaryDark',
+  running: 'text-ares-muted',
+  queued: 'text-ares-muted',
+  failed: 'text-ares-ink',
+};
 
 function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -63,6 +79,12 @@ export default function HqClientDetail() {
   const [addOpen, setAddOpen] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [descDraft, setDescDraft] = useState<string | null>(null);
+  const [confirmPaidOpen, setConfirmPaidOpen] = useState(false);
+  const [reviewReportId, setReviewReportId] = useState<number | null>(null);
+  const [walkReportId, setWalkReportId] = useState<number | null>(null);
+  const [walkAt, setWalkAt] = useState('');
+  const [walkNotes, setWalkNotes] = useState('');
 
   const invalidate = () => utils.hq.clientDetail.invalidate({ tenantId });
   const onError = (err: { message: string }) => toast.show(err.message);
@@ -101,13 +123,32 @@ export default function HqClientDetail() {
   });
   const setAuditPaid = trpc.hq.setAuditPaid.useMutation({
     onSuccess: async () => {
+      setConfirmPaidOpen(false);
       await invalidate();
     },
     onError,
   });
+  const updateClient = trpc.hq.updateClient.useMutation({
+    onSuccess: async () => {
+      toast.show('Business profile saved.');
+      setDescDraft(null);
+      await invalidate();
+      await utils.hq.clients.invalidate();
+    },
+    onError,
+  });
   const triggerReport = trpc.hq.triggerReport.useMutation({
-    onSuccess: async (r) => {
-      toast.show(`Report complete — ${r.emailed}/${r.emailAttempts} notifications sent.`);
+    onSuccess: async () => {
+      toast.show('Report generated — now waiting in review.');
+      await invalidate();
+      await utils.hq.reportsList.invalidate();
+    },
+    onError,
+  });
+  const scheduleWalkthrough = trpc.hq.scheduleWalkthrough.useMutation({
+    onSuccess: async () => {
+      toast.show('Walkthrough saved.');
+      setWalkReportId(null);
       await invalidate();
     },
     onError,
@@ -132,7 +173,7 @@ export default function HqClientDetail() {
     return { ...svc, connected: row?.status === 'connected', accountLabel: row?.accountLabel ?? null };
   });
   const googleCount = googleRows.filter((g) => g.connected).length;
-  const stepIndex = STEP_ORDER.indexOf(checklist?.status ?? 'new');
+  const stepIndex = CHECKLIST_STEPS.findIndex((s) => s.key === checklist?.status);
   const inviteUrl = invitePath ? `${window.location.origin}${invitePath}` : null;
 
   return (
@@ -148,11 +189,52 @@ export default function HqClientDetail() {
         </Link>
       </PageHeader>
 
-      <p className="-mt-3 text-[11px] font-light text-ares-muted">
-        {tenant.industry} · {tenant.websiteUrl} · portal view is read-only for staff
-      </p>
+      <div className="-mt-3 flex flex-wrap items-center gap-2 text-[11px] font-light text-ares-muted">
+        <span>{tenant.industry} · {tenant.websiteUrl} · portal view is read-only for staff</span>
+        {tenant.businessCategory && (
+          <span className="badge-pill text-ares-primaryDark">
+            {BUSINESS_CATEGORY_LABELS[tenant.businessCategory as BusinessCategory] ?? tenant.businessCategory}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* Business profile (Phase 1.5) */}
+        <Card title="Business profile">
+          {tenant.businessCategory ? (
+            <span className="badge-pill text-ares-primaryDark">
+              {BUSINESS_CATEGORY_LABELS[tenant.businessCategory as BusinessCategory] ?? tenant.businessCategory}
+            </span>
+          ) : (
+            <span className="text-[11px] font-light text-ares-muted">No category set</span>
+          )}
+          <label className="mt-3 block">
+            <span className="font-label text-ares-muted">Description</span>
+            <textarea
+              value={descDraft ?? tenant.businessDescription ?? ''}
+              onChange={(e) => setDescDraft(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="What the business does, who it serves, where it operates…"
+              className="mt-1.5 w-full resize-none rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[12px] font-light text-ares-text outline-none focus:border-ares-primary"
+            />
+          </label>
+          {descDraft !== null && descDraft !== (tenant.businessDescription ?? '') && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                className="btn-primary px-3 py-1.5 text-[10px]"
+                disabled={updateClient.isPending}
+                onClick={() => updateClient.mutate({ tenantId, businessDescription: descDraft })}
+              >
+                {updateClient.isPending ? 'Saving…' : 'Save description'}
+              </button>
+              <button className="btn-secondary px-3 py-1.5 text-[10px]" onClick={() => setDescDraft(null)}>
+                Cancel
+              </button>
+            </div>
+          )}
+        </Card>
+
         {/* Contacts */}
         <Card
           title="Contacts"
@@ -241,7 +323,12 @@ export default function HqClientDetail() {
               className="h-4 w-4 accent-ares-primary"
               checked={tenant.auditPaid}
               disabled={setAuditPaid.isPending}
-              onChange={(e) => setAuditPaid.mutate({ tenantId, paid: e.target.checked })}
+              onChange={(e) => {
+                // Marking paid unlocks the initial audit, so it needs an
+                // explicit confirmation ("Confirm payment received?").
+                if (e.target.checked) setConfirmPaidOpen(true);
+                else setAuditPaid.mutate({ tenantId, paid: false });
+              }}
             />
             $399 initial audit collected (manual — Stripe later)
           </label>
@@ -279,7 +366,7 @@ export default function HqClientDetail() {
         <Card title="Onboarding checklist">
           <ol className="space-y-0">
             {CHECKLIST_STEPS.map((step, i) => {
-              const done = i < stepIndex || checklist?.status === 'active';
+              const done = checklist?.status === 'active' || i < stepIndex;
               const current = i === stepIndex && checklist?.status !== 'active';
               const at = checklist && step.at ? (checklist as Record<string, unknown>)[step.at] as Date | null : null;
               return (
@@ -318,16 +405,22 @@ export default function HqClientDetail() {
         action={
           <div className="flex items-center gap-2">
             <button
-              className="btn-primary px-3 py-1.5 text-[10px]"
-              disabled={triggerReport.isPending}
+              className="btn-primary px-3 py-1.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={triggerReport.isPending || !tenant.auditPaid}
+              title={tenant.auditPaid ? undefined : 'Mark as paid first'}
               onClick={() => triggerReport.mutate({ tenantId, type: 'initial_audit' })}
             >
               <Icon icon={icons.target} width={12} height={12} />
               Run initial audit
             </button>
             <button
-              className="btn-secondary px-3 py-1.5 text-[10px]"
-              disabled={triggerReport.isPending}
+              className="btn-secondary px-3 py-1.5 text-[10px] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={triggerReport.isPending || (tenant.plan !== 'growth' && tenant.plan !== 'enterprise')}
+              title={
+                tenant.plan === 'growth' || tenant.plan === 'enterprise'
+                  ? undefined
+                  : 'Monthly reports require a Growth or Enterprise plan'
+              }
               onClick={() => triggerReport.mutate({ tenantId, type: 'monthly' })}
             >
               <Icon icon={icons.documentText} width={12} height={12} />
@@ -342,7 +435,7 @@ export default function HqClientDetail() {
           <table className="w-full text-left text-[12px]">
             <thead>
               <tr className="border-b border-ares-border">
-                {['Type', 'Period', 'Status', 'Created', 'Completed'].map((h) => (
+                {['Type', 'Period', 'Status', 'Walkthrough', 'Created', 'Completed', ''].map((h) => (
                   <th key={h} className="font-label px-2 py-2 text-ares-muted">{h}</th>
                 ))}
               </tr>
@@ -353,12 +446,50 @@ export default function HqClientDetail() {
                   <td className="px-2 py-2">{r.type === 'initial_audit' ? 'Initial Audit' : 'Monthly'}</td>
                   <td className="px-2 py-2 text-ares-secondarytext">{r.periodLabel}</td>
                   <td className="px-2 py-2">
-                    <span className={cn('badge-pill', r.status === 'complete' ? 'text-ares-primaryDark' : 'text-ares-muted')}>
-                      {r.status}
+                    <span className={cn('badge-pill', REPORT_STATUS_STYLES[r.status] ?? 'text-ares-muted')}>
+                      {r.status.replace('_', ' ')}
                     </span>
+                  </td>
+                  <td className="px-2 py-2 text-ares-muted">
+                    {r.walkthroughAt ? (
+                      <span title={r.walkthroughNotes ?? undefined}>{fmtDate(r.walkthroughAt)}</span>
+                    ) : (
+                      '—'
+                    )}
                   </td>
                   <td className="px-2 py-2 text-ares-muted">{fmtDate(r.createdAt)}</td>
                   <td className="px-2 py-2 text-ares-muted">{fmtDate(r.completedAt)}</td>
+                  <td className="px-2 py-2 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {r.status === 'in_review' && (
+                        <button
+                          className="btn-primary px-2.5 py-1 text-[10px]"
+                          onClick={() => setReviewReportId(r.id)}
+                        >
+                          <Icon icon={icons.eye} width={11} height={11} />
+                          Review
+                        </button>
+                      )}
+                      <button
+                        className="btn-secondary px-2.5 py-1 text-[10px]"
+                        title="Schedule results walkthrough"
+                        onClick={() => {
+                          setWalkReportId(r.id);
+                          setWalkAt(
+                            r.walkthroughAt
+                              ? new Date(new Date(r.walkthroughAt).getTime() - new Date().getTimezoneOffset() * 60000)
+                                  .toISOString()
+                                  .slice(0, 16)
+                              : ''
+                          );
+                          setWalkNotes(r.walkthroughNotes ?? '');
+                        }}
+                      >
+                        <Icon icon={icons.calendar} width={11} height={11} />
+                        Walkthrough
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -459,6 +590,98 @@ export default function HqClientDetail() {
           <p className="text-[10px] font-light text-ares-muted">
             New contacts are added as backup recipients with report notifications on. The primary
             contact can only be replaced, never removed last.
+          </p>
+        </div>
+      </Modal>
+
+      {/* Confirm payment received (charge-before-report gate) */}
+      <Modal
+        open={confirmPaidOpen}
+        onClose={() => setConfirmPaidOpen(false)}
+        title="Confirm payment received?"
+        footer={
+          <>
+            <button className="btn-secondary px-4 py-2 text-[12px]" onClick={() => setConfirmPaidOpen(false)}>
+              Cancel
+            </button>
+            <button
+              className="btn-primary px-4 py-2 text-[12px]"
+              disabled={setAuditPaid.isPending}
+              onClick={() => setAuditPaid.mutate({ tenantId, paid: true })}
+            >
+              {setAuditPaid.isPending ? 'Saving…' : 'Yes, payment received'}
+            </button>
+          </>
+        }
+      >
+        <p className="text-[12px] font-light leading-relaxed text-ares-secondarytext">
+          Marking <strong>{tenant.name}</strong> as paid unlocks the initial audit (the
+          charge-before-report gate). Only confirm once the $399 has actually been received.
+        </p>
+      </Modal>
+
+      {/* Report review gate preview */}
+      <ReportReviewModal
+        reportId={reviewReportId}
+        onClose={() => setReviewReportId(null)}
+        onChanged={async () => {
+          await invalidate();
+          await utils.hq.reportsList.invalidate();
+          await utils.hq.notifications.invalidate();
+        }}
+        onError={(m) => toast.show(m)}
+      />
+
+      {/* Schedule walkthrough */}
+      <Modal
+        open={walkReportId !== null}
+        onClose={() => setWalkReportId(null)}
+        title="Schedule results walkthrough"
+        footer={
+          <>
+            <button className="btn-secondary px-4 py-2 text-[12px]" onClick={() => setWalkReportId(null)}>
+              Cancel
+            </button>
+            <button
+              className="btn-primary px-4 py-2 text-[12px]"
+              disabled={scheduleWalkthrough.isPending || !walkAt}
+              onClick={() =>
+                walkReportId &&
+                scheduleWalkthrough.mutate({
+                  reportId: walkReportId,
+                  walkthroughAt: walkAt ? new Date(walkAt) : null,
+                  walkthroughNotes: walkNotes || undefined,
+                })
+              }
+            >
+              {scheduleWalkthrough.isPending ? 'Saving…' : 'Save walkthrough'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <label className="block">
+            <span className="font-label text-ares-muted">Date & time</span>
+            <input
+              type="datetime-local"
+              value={walkAt}
+              onChange={(e) => setWalkAt(e.target.value)}
+              className="mt-1.5 w-full rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[13px] font-light outline-none focus:border-ares-primary"
+            />
+          </label>
+          <label className="block">
+            <span className="font-label text-ares-muted">Notes (optional)</span>
+            <textarea
+              value={walkNotes}
+              onChange={(e) => setWalkNotes(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="Agenda, attendees, link to the call…"
+              className="mt-1.5 w-full resize-none rounded-ares border border-ares-border bg-ares-card px-3 py-2 text-[13px] font-light outline-none focus:border-ares-primary"
+            />
+          </label>
+          <p className="text-[10px] font-light text-ares-muted">
+            Scheduled walkthroughs appear on the HQ dashboard for the next 14 days.
           </p>
         </div>
       </Modal>
